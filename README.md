@@ -61,7 +61,7 @@ InsureIQ demystifies health insurance pricing. A user enters ten inputs — age,
 
 | Resource | Link |
 |---|---|
-| **GitHub Repository** | https://github.com/ArunVijaykumarcsds/InsureIQ |
+| **Live Demo Link** | https://insureiq-1-qvqg.onrender.com/ |
 | **Live Deployment** | Deployed on Render (free tier — allow ~5–8 s cold start) |
 | **Health Check** | `GET /health` → `{"status":"healthy","model_loaded":true,"version":"2.2.0"}` |
 | **System Status** | `GET /system-status` → full runtime diagnostics |
