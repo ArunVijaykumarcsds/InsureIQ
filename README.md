@@ -78,25 +78,25 @@ flowchart TD
 
     subgraph Frontend["Frontend Layer - templates/index.html"]
         Form["Multi-Step Form - Steps 1 to 4"]
-        JS["Vanilla JS - collectData()"]
+        JS["Vanilla JS - collectData function"]
         Results["Results Dashboard - Risk Badge and What-If Cards"]
     end
 
     subgraph FlaskApp["Flask Application - app.py"]
         Router["Routes: POST /predict - GET /health - GET /system-status"]
-        Validator["Input Validator - REQUIRED_FIELDS check - sanitise_float() - Range guards"]
+        Validator["Input Validator - REQUIRED_FIELDS check - sanitise_float - Range guards"]
         SecHdr["after_request Hook - CSP - X-Frame-Options - X-Content-Type-Options"]
         ErrHandlers["Error Handlers - 400 - 404 - 405 - 500"]
     end
 
     subgraph Startup["Startup Validation - runs before Flask binds"]
-        LoadModel["load_model() - deserialise pkl - smoke-test predict()"]
-        LoadMeta["load_metadata() - parse JSON - FEATURE_ORDER match guard"]
+        LoadModel["load_model - deserialise pkl - smoke-test predict"]
+        LoadMeta["load_metadata - parse JSON - FEATURE_ORDER match guard"]
     end
 
     subgraph Engine["Prediction Engine"]
         Pipeline["sklearn Pipeline - StandardScaler then GBR"]
-        RiskFn["get_risk_profile() - score to Low or Medium or High"]
+        RiskFn["get_risk_profile - score to Low or Medium or High"]
         WhatIf["3x what-if re-predictions - non-smoker - BMI under 25 - age minus 10"]
     end
 
@@ -178,7 +178,7 @@ flowchart TD
     I -->|Out of range| ERR3[400 - Validation error]
     I -->|Valid| J[Assemble FEATURE_ORDER array - np.array reshape 1x10]
 
-    J --> K[pipeline.predict()]
+    J --> K[Run pipeline predict]
     K --> L[get_risk_profile - score from smoker plus BMI plus age plus prediction]
     L --> M{Parallel what-if re-predictions}
     M --> N[non-smoker prediction if smoker is 1]
@@ -426,9 +426,9 @@ Full runtime diagnostics including model metadata, memory usage, and top feature
 
 ```mermaid
 flowchart LR
-    A[("Medical Cost Personal Dataset - 1338 records")] -->|"fetch_dataset() - Download or load cache"| B["insurance_base.csv - 7 columns: age sex bmi children smoker region charges"]
+    A[("Medical Cost Personal Dataset - 1338 records")] -->|"fetch_dataset - Download or load cache"| B["insurance_base.csv - 7 columns: age sex bmi children smoker region charges"]
 
-    B -->|"engineer_features() rng seed=42"| C["Extended Dataset - 10 columns - 1338 rows"]
+    B -->|"engineer_features - rng seed=42"| C["Extended Dataset - 10 columns - 1338 rows"]
 
     subgraph FE ["Feature Engineering"]
         C1["past_consultations - Poisson based on age BMI smoker children"]
@@ -451,7 +451,7 @@ flowchart LR
 
     E -->|"pipe.fit"| F["Trained Pipeline"]
 
-    F -->|"pipe.predict X_test"| G["Hold-out Evaluation - R2=0.8573 - MAE=2921.58 - RMSE=4588.44"]
+    F -->|"pipe.predict on X_test"| G["Hold-out Evaluation - R2=0.8573 - MAE=2921.58 - RMSE=4588.44"]
 
     F -->|"cross_val_score cv=5"| H["5-Fold CV - R2=0.8402 std=0.0325"]
 
@@ -626,7 +626,7 @@ flowchart TD
         Build["Build Phase - pip install requirements.txt - python train_model.py - Downloads dataset - Trains GBR in 0.8s - Writes pkl and metadata.json"]
 
         subgraph Server["Web Service"]
-            Startup["Startup Validation - load_model() smoke-test - load_metadata() schema check - FEATURE_ORDER guard"]
+            Startup["Startup Validation - load_model smoke-test - load_metadata schema check - FEATURE_ORDER guard"]
             Gunicorn["Gunicorn - 1 worker - 2 threads - timeout 120s - 0.0.0.0 PORT"]
             Flask["Flask App v2.2.0 - Routes - Validators - Security Headers"]
             Model["Loaded Pipeline - 1291 KB in memory"]
@@ -892,32 +892,6 @@ Yes, but you must: (1) add generation logic in `train_model.py`, (2) update `FEA
 
 **Is there any authentication on the API?**
 No. InsureIQ is a public prediction service with no user data stored. Input validation prevents abuse at the model level; rate limiting is listed as a future enhancement.
-
----
-
-## Repository Audit Report
-
-| Dimension | Value |
-|---|---|
-| **Total files analysed** | 10 (app.py, train_model.py, model_metadata.json, insurance_model.pkl, insurance_base.csv, requirements.txt, render.yaml, .python-version, .gitignore, templates/index.html) |
-| **Languages detected** | Python (40.5%), HTML/CSS/JS (59.5%) |
-| **Python version** | 3.11 (pinned in `.python-version`) |
-| **Frameworks** | Flask 3.0.0 (web), scikit-learn 1.6.1 (ML), Gunicorn 21.2.0 (WSGI) |
-| **ML algorithm** | GradientBoostingRegressor inside sklearn Pipeline with StandardScaler |
-| **ML libraries** | scikit-learn 1.6.1, NumPy 1.26.4, joblib 1.3.2 |
-| **Frontend technologies** | Vanilla HTML5, CSS3 custom properties, vanilla JavaScript — no framework or build step |
-| **Deployment platform** | Render (free tier) — `render.yaml` zero-config |
-| **Security mechanisms** | CSP, X-Frame-Options, nosniff, X-XSS-Protection, Referrer-Policy, three-layer input validation, fail-fast startup guards |
-| **Monitoring** | `/health` (liveness), `/system-status` (full diagnostics with metrics + memory) |
-
-### Scores
-
-| Category | Score | Reasoning |
-|---|---|---|
-| **Production Readiness** | **8 / 10** | Fail-fast startup, security headers, structured error handlers, health endpoints, Render deployment config, and Gunicorn configuration are all present and correct. Deductions: no formal test suite, no rate limiting, no CI/CD pipeline, `psutil` is optional rather than pinned. |
-| **ML Architecture** | **8.5 / 10** | Sklearn Pipeline (scaler + GBR) is the correct abstraction. Hyperparameters are justified. Stratified split on smoker column. 5-fold CV. Feature importances exported. Metadata versioning with startup schema guard. Formal leakage audit with honest before/after metrics. Deductions: no hyperparameter search, no SHAP explainability layer, synthetic features rather than real data. |
-| **Documentation** | **7 / 10** | The codebase is thoroughly commented. Every function in `app.py` and `train_model.py` has a clear docstring. `model_metadata.json` is self-documenting. The existing README is detailed. Deductions: no formal API documentation (e.g. OpenAPI), no inline type hints throughout, no contribution guide. |
-| **Maintainability** | **8 / 10** | Clean separation of concerns: training (`train_model.py`), serving (`app.py`), frontend (`templates/`), deployment (`render.yaml`). Feature schema contract between training and serving is explicit and machine-checked at startup. Constants are centralised. All five dependencies are pinned. Deductions: no test suite makes refactoring riskier; feature names with inconsistent casing (`NUmber_of_past_hospitalizations`) are a technical debt item. |
 
 ---
 
