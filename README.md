@@ -74,48 +74,48 @@ InsureIQ demystifies health insurance pricing. A user enters ten inputs — age,
 
 ```mermaid
 flowchart TD
-    Browser["🌐 Browser\n(User)"]
+    Browser["Browser - User"]
 
-    subgraph Frontend["Frontend Layer — templates/index.html"]
-        Form["Multi-Step Form\nSteps 1–4"]
-        JS["Vanilla JS\ncollectData()"]
-        Results["Results Dashboard\nRisk Badge · What-If Cards"]
+    subgraph Frontend["Frontend Layer - templates/index.html"]
+        Form["Multi-Step Form - Steps 1 to 4"]
+        JS["Vanilla JS - collectData()"]
+        Results["Results Dashboard - Risk Badge and What-If Cards"]
     end
 
-    subgraph Flask["Flask Application — app.py"]
-        Router["Route: POST /predict\nGET /health\nGET /system-status"]
-        Validator["Input Validator\nREQUIRED_FIELDS check\nsanitise_float()\nRange guards"]
-        SecHdr["after_request Hook\nCSP · X-Frame-Options\nX-Content-Type-Options\nX-XSS-Protection"]
-        ErrHandlers["Error Handlers\n400 · 404 · 405 · 500"]
+    subgraph FlaskApp["Flask Application - app.py"]
+        Router["Routes: POST /predict - GET /health - GET /system-status"]
+        Validator["Input Validator - REQUIRED_FIELDS check - sanitise_float() - Range guards"]
+        SecHdr["after_request Hook - CSP - X-Frame-Options - X-Content-Type-Options"]
+        ErrHandlers["Error Handlers - 400 - 404 - 405 - 500"]
     end
 
-    subgraph Startup["Startup Validation — runs before Flask binds"]
-        LoadModel["load_model()\ndeserialise pkl\nsmoke-test predict()"]
-        LoadMeta["load_metadata()\nparse JSON\nFEATURE_ORDER match guard"]
+    subgraph Startup["Startup Validation - runs before Flask binds"]
+        LoadModel["load_model() - deserialise pkl - smoke-test predict()"]
+        LoadMeta["load_metadata() - parse JSON - FEATURE_ORDER match guard"]
     end
 
     subgraph Engine["Prediction Engine"]
-        Pipeline["sklearn Pipeline\nStandardScaler → GBR"]
-        RiskFn["get_risk_profile()\nscore → Low/Medium/High"]
-        WhatIf["3× what-if re-predictions\nnon-smoker · BMI<25 · age-10"]
+        Pipeline["sklearn Pipeline - StandardScaler then GBR"]
+        RiskFn["get_risk_profile() - score to Low or Medium or High"]
+        WhatIf["3x what-if re-predictions - non-smoker - BMI under 25 - age minus 10"]
     end
 
     subgraph Artifacts["Model Artifacts"]
-        PKL["insurance_model.pkl\n~1,291 KB"]
-        Meta["model_metadata.json\nfeatures · metrics · schema"]
-        CSV["insurance_base.csv\n1,338 records"]
+        PKL["insurance_model.pkl - 1291 KB"]
+        Meta["model_metadata.json - features - metrics - schema"]
+        CSV["insurance_base.csv - 1338 records"]
     end
 
     Browser -->|"User fills form"| Form
     Form --> JS
-    JS -->|"POST /predict (JSON)"| Router
+    JS -->|"POST /predict JSON"| Router
     Router --> Validator
     Validator -->|"Valid inputs"| Engine
     Engine --> Pipeline
     Pipeline --> RiskFn
     RiskFn --> WhatIf
     WhatIf -->|"JSON response"| SecHdr
-    SecHdr -->|"200 + security headers"| Results
+    SecHdr -->|"200 plus security headers"| Results
     Results --> Browser
 
     Startup --> LoadModel
@@ -164,30 +164,32 @@ InsureIQ/
 
 ```mermaid
 flowchart TD
-    A([User opens app]) --> B[Step 1 — Personal Profile\nAge · Sex · Children · Smoker]
-    B --> C[Step 2 — Physical Health\nBMI slider · Past Consultations · Daily Steps]
-    C --> D[Step 3 — Medical History\nPast Hospitalisations]
-    D --> E[Step 4 — Financial Profile\nAnnual Salary · Region]
-    E --> F{Submit — POST /predict}
+    A([User opens app]) --> B[Step 1 - Personal Profile - Age - Sex - Children - Smoker]
+    B --> C[Step 2 - Physical Health - BMI slider - Past Consultations - Daily Steps]
+    C --> D[Step 3 - Medical History - Past Hospitalisations]
+    D --> E[Step 4 - Financial Profile - Annual Salary - Region]
+    E --> F{Submit POST /predict}
 
-    F --> G{REQUIRED_FIELDS\npresence check}
-    G -->|Missing field| ERR1[400 — Missing fields]
-    G -->|All present| H{sanitise_float()\ntype check}
-    H -->|Non-numeric| ERR2[400 — Invalid type]
-    H -->|Numeric| I{Range validation\nage·bmi·sex·smoker\nchildren·region}
-    I -->|Out of range| ERR3[400 — Validation error]
-    I -->|Valid| J[Assemble FEATURE_ORDER array\nnp.array reshape 1×10]
+    F --> G{REQUIRED_FIELDS presence check}
+    G -->|Missing field| ERR1[400 - Missing fields]
+    G -->|All present| H{sanitise_float type check}
+    H -->|Non-numeric| ERR2[400 - Invalid type]
+    H -->|Numeric| I{Range validation - age bmi sex smoker children region}
+    I -->|Out of range| ERR3[400 - Validation error]
+    I -->|Valid| J[Assemble FEATURE_ORDER array - np.array reshape 1x10]
 
     J --> K[pipeline.predict()]
-    K --> L[get_risk_profile()\nscore from smoker+BMI+age+prediction]
-    L --> M{Parallel what-if\nre-predictions}
-    M --> N[non-smoker prediction\nif smoker==1]
-    M --> O[healthy BMI prediction\nif bmi > 24.9]
-    M --> P[age−10 prediction\nif age > 30]
+    K --> L[get_risk_profile - score from smoker plus BMI plus age plus prediction]
+    L --> M{Parallel what-if re-predictions}
+    M --> N[non-smoker prediction if smoker is 1]
+    M --> O[healthy BMI prediction if bmi above 24.9]
+    M --> P[age minus 10 prediction if age above 30]
 
-    N & O & P --> Q[Assemble JSON response]
-    Q --> R[after_request hook\nattach security headers]
-    R --> S([Results Dashboard\nPremium · Risk Badge · What-If Cards])
+    N --> Q[Assemble JSON response]
+    O --> Q
+    P --> Q
+    Q --> R[after_request hook - attach security headers]
+    R --> S([Results Dashboard - Premium - Risk Badge - What-If Cards])
 ```
 
 ---
@@ -424,32 +426,39 @@ Full runtime diagnostics including model metadata, memory usage, and top feature
 
 ```mermaid
 flowchart LR
-    A[("Medical Cost\nPersonal Dataset\n1,338 records")] -->|"fetch_dataset()\nDownload or load cache"| B["insurance_base.csv\n7 columns:\nage sex bmi children\nsmoker region charges"]
+    A[("Medical Cost Personal Dataset - 1338 records")] -->|"fetch_dataset() - Download or load cache"| B["insurance_base.csv - 7 columns: age sex bmi children smoker region charges"]
 
-    B -->|"engineer_features()\nrng seed=42"| C["Extended Dataset\n10 columns\n1,338 rows"]
+    B -->|"engineer_features() rng seed=42"| C["Extended Dataset - 10 columns - 1338 rows"]
 
     subgraph FE ["Feature Engineering"]
-        C1["past_consultations\nPoisson(age+BMI+smoker+children)"]
-        C2["num_of_steps\nNormal(10000 − smoker×2500 − BMI×150 − age×50)"]
-        C3["NUmber_of_past_hospitalizations\nPoisson(smoker×2.2 + BMI_excess + age_factor)"]
-        C4["Anual_Salary\nNormal(30000 + age×1200 + sex_offset)"]
+        C1["past_consultations - Poisson based on age BMI smoker children"]
+        C2["num_of_steps - Normal dist centered on 10000 minus smoker and BMI penalties"]
+        C3["NUmber_of_past_hospitalizations - Poisson based on smoker BMI age"]
+        C4["Anual_Salary - Normal dist centered on age career curve"]
     end
 
-    C --> C1 & C2 & C3 & C4
+    C --> C1
+    C --> C2
+    C --> C3
+    C --> C4
 
-    C1 & C2 & C3 & C4 --> D["train_test_split\n80% train (1,070)\n20% test (268)\nstratify=smoker"]
+    C1 --> D["train_test_split - 80pct train 1070 - 20pct test 268 - stratify on smoker"]
+    C2 --> D
+    C3 --> D
+    C4 --> D
 
-    D -->|"X_train, y_train"| E["sklearn Pipeline\nStandardScaler\n↓\nGradientBoostingRegressor\nn_estimators=400\nmax_depth=5\nlr=0.04\nsubsample=0.85"]
+    D -->|"X_train y_train"| E["sklearn Pipeline - StandardScaler - GradientBoostingRegressor - n_estimators=400 max_depth=5 lr=0.04 subsample=0.85"]
 
-    E -->|"pipe.fit(X_train, y_train)"| F["Trained Pipeline"]
+    E -->|"pipe.fit"| F["Trained Pipeline"]
 
-    F -->|"pipe.predict(X_test)"| G["Hold-out Evaluation\nR²=0.8573\nMAE=$2,921.58\nRMSE=$4,588.44"]
+    F -->|"pipe.predict X_test"| G["Hold-out Evaluation - R2=0.8573 - MAE=2921.58 - RMSE=4588.44"]
 
-    F -->|"cross_val_score cv=5"| H["5-Fold CV\nR²=0.8402 ± 0.0325"]
+    F -->|"cross_val_score cv=5"| H["5-Fold CV - R2=0.8402 std=0.0325"]
 
-    G & H --> I["joblib.dump() → insurance_model.pkl\nfeature_importances_ → model_metadata.json"]
+    G --> I["joblib.dump to insurance_model.pkl - feature_importances to model_metadata.json"]
+    H --> I
 
-    I -->|"Startup validation\nFEATURE_ORDER check"| J["Flask API\napp.py"]
+    I -->|"Startup validation - FEATURE_ORDER check"| J["Flask API - app.py"]
 ```
 
 ### Dataset
@@ -607,30 +616,31 @@ validations = [
 
 ```mermaid
 flowchart TD
-    Dev["👨‍💻 Developer\nLocal Machine"]
+    Dev["Developer - Local Machine"]
 
     subgraph GitHub["GitHub"]
-        Repo["Repository\nmain branch"]
+        Repo["Repository - main branch"]
     end
 
-    subgraph Render["Render Cloud (Free Tier)"]
-        Build["Build Phase\npip install -r requirements.txt\npython train_model.py\n→ Downloads dataset\n→ Trains GBR (≈0.8s)\n→ Writes .pkl + metadata.json"]
+    subgraph Render["Render Cloud - Free Tier"]
+        Build["Build Phase - pip install requirements.txt - python train_model.py - Downloads dataset - Trains GBR in 0.8s - Writes pkl and metadata.json"]
 
         subgraph Server["Web Service"]
-            Startup["Startup Validation\nload_model() smoke-test\nload_metadata() schema check\nFEATURE_ORDER guard"]
-            Gunicorn["Gunicorn\n1 worker · 2 threads\ntimeout 120s\n0.0.0.0:$PORT"]
-            Flask["Flask App v2.2.0\nRoutes · Validators\nSecurity Headers"]
-            Model["Loaded Pipeline\n~1,291 KB in memory"]
+            Startup["Startup Validation - load_model() smoke-test - load_metadata() schema check - FEATURE_ORDER guard"]
+            Gunicorn["Gunicorn - 1 worker - 2 threads - timeout 120s - 0.0.0.0 PORT"]
+            Flask["Flask App v2.2.0 - Routes - Validators - Security Headers"]
+            Model["Loaded Pipeline - 1291 KB in memory"]
         end
     end
 
-    Users["🌐 Users"]
+    Users["Users - HTTPS"]
+    Fail["Deploy marked FAILED - Render does not route traffic"]
 
     Dev -->|"git push"| Repo
     Repo -->|"Auto-deploy trigger"| Build
     Build -->|"Build success"| Startup
     Startup -->|"All guards pass"| Gunicorn
-    Startup -->|"Any guard fails → sys.exit(1)"| Fail["❌ Deploy marked FAILED\nRender does not route traffic"]
+    Startup -->|"Any guard fails - sys.exit(1)"| Fail
     Gunicorn --> Flask
     Flask --> Model
     Users -->|"HTTPS"| Gunicorn
