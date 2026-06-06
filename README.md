@@ -1,304 +1,375 @@
-# InsureIQ v2.2 — AI-Powered Insurance Premium Predictor
+<div align="center">
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/Flask-3.0.0-lightgrey?style=flat-square&logo=flask" alt="Flask">
-  <img src="https://img.shields.io/badge/Scikit--Learn-1.6.1-orange?style=flat-square&logo=scikit-learn" alt="scikit-learn">
-  <img src="https://img.shields.io/badge/Deployed-Render-purple?style=flat-square" alt="Render">
-  <img src="https://img.shields.io/badge/Model-GradientBoosting-green?style=flat-square" alt="Model">
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT">
-</p>
+# 🛡️ InsureIQ
 
-> A production-hardened machine learning application that predicts annual health insurance premiums from demographic, lifestyle, and healthcare history inputs — deployed on Render with fail-fast startup validation, security hardening, and a deep matte-blue multi-step UI.
+### AI-Powered Insurance Premium Predictor
+
+**A production-hardened, full-stack machine learning application that predicts annual health insurance premiums from demographic, lifestyle, and medical history inputs — deployed on Render with fail-fast startup validation, leakage-audited ML, and a multi-step dark-UI frontend.**
 
 ---
 
-## Project Overview
+[![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.0.0-lightgrey?style=flat-square&logo=flask)](https://flask.palletsprojects.com)
+[![scikit-learn](https://img.shields.io/badge/Scikit--Learn-1.6.1-orange?style=flat-square&logo=scikit-learn)](https://scikit-learn.org)
+[![Gunicorn](https://img.shields.io/badge/Gunicorn-21.2.0-green?style=flat-square)](https://gunicorn.org)
+[![Deployed on Render](https://img.shields.io/badge/Deployed-Render-purple?style=flat-square)](https://render.com)
+[![Model](https://img.shields.io/badge/Model-GradientBoosting-brightgreen?style=flat-square)](https://scikit-learn.org/stable/modules/ensemble.html#gradient-boosting)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-2.2.0-blue?style=flat-square)]()
+[![Leakage Audited](https://img.shields.io/badge/Leakage-Audited%20%E2%9C%94-success?style=flat-square)]()
 
-Health insurance pricing is one of the most consequential and opaque decisions consumers face. Insurers weigh dozens of factors — age, BMI, smoking status, medical history, income — and produce a premium figure that most people cannot anticipate or challenge. InsureIQ demystifies that process.
+</div>
 
-InsureIQ is a full-stack machine learning web application that takes ten patient-level inputs and predicts their likely annual insurance charge in real time. Beyond the number, it provides a risk profile classification (Low / Medium / High), personalised lifestyle advice, and **what-if simulations** — showing users exactly how much they could save by quitting smoking, reaching a healthy BMI, or comparing their premium at a younger age.
+---
 
-The project was built to demonstrate the complete arc of applied machine learning engineering: dataset acquisition, feature design, model training and validation, API development, security hardening, and cloud deployment — all in a single, self-contained repository.
+## Executive Summary
 
-### Real-World Relevance
+InsureIQ demystifies health insurance pricing. A user enters ten inputs — age, BMI, smoking status, activity level, medical history, income, and region — and receives a real-time annual premium prediction, a colour-coded risk profile (Low / Medium / High), and **what-if simulations** showing exactly how much they could save by quitting smoking, reaching a healthy BMI, or comparing their current premium to a younger baseline.
 
-- Insurance premiums in the US average over $7,700/year for an individual. A tool that helps people understand and anticipate that cost has direct financial value.
-- The project tackles a common ML anti-pattern — **data leakage** — head-on, documents the discovery, and ships a corrected model with honest metrics. This makes it a stronger portfolio piece than one that simply reports inflated numbers.
-- The full-stack architecture mirrors production ML systems: a trained model artefact, a validation layer, an API, and a user-facing frontend, each with independent correctness guarantees.
+**Why it exists:** US individual health premiums average over $7,700 per year. Most consumers cannot anticipate or challenge that figure. InsureIQ provides transparency, personalised risk context, and actionable savings estimates — all in a single page, under 300 ms.
+
+**What makes it different from a Jupyter notebook:** Every layer of the stack ships production engineering — fail-fast startup guards, HTTP security headers, feature schema versioning between the model artefact and the API, structured health endpoints, and a zero-config cloud deployment. The ML pipeline itself underwent a formal data-leakage audit that corrected inflated metrics and produced an honest, robust model.
+
+**Who benefits:** End users seeking premium transparency; engineers reviewing full-stack ML architecture; recruiters evaluating applied ML depth; hiring managers assessing production readiness.
 
 ---
 
 ## Key Features
 
-| Feature | Detail |
-|---|---|
-| **Premium prediction** | Gradient Boosting regressor trained on 1,338 real insurance records, extended with four statistically-generated features |
-| **Risk profile engine** | Classifies each prediction as Low / Medium / High Risk with a personalised score and actionable advice |
-| **What-if simulations** | Live re-prediction showing savings from smoking cessation, healthy BMI, and age comparison |
-| **Multi-step form UI** | Four-step guided input wizard with animated progress bar and real-time range sliders |
-| **Fail-fast startup** | Model and metadata loaded and validated before Flask binds — bad deploys crash immediately, not silently |
-| **Feature schema guard** | Startup comparison of `model_metadata.json` against `FEATURE_ORDER` in `app.py`; mismatch aborts launch |
-| **Health endpoints** | `/health` and `/system-status` endpoints for uptime monitoring and deployment diagnostics |
-| **Security hardening** | CSP, `X-Frame-Options`, `X-Content-Type-Options`, `X-XSS-Protection`, `Referrer-Policy` on every response |
-| **Input validation** | Server-side range checks on every field; typed sanitisation before any model call |
-| **Render deployment** | Zero-config `render.yaml` with `buildCommand` that trains the model at deploy time |
-| **Deep matte-blue UI** | Custom dark design system with accent blues, glowing progress indicator, risk badge colours, and insight cards |
-| **Leakage-free model** | Two data-leaking features (`Claim_Amount`, `Hospital_expenditure`) identified and permanently removed in v2.2 |
-
----
-
-## Architecture Overview
-
-```
-User (Browser)
-      │
-      ▼
-┌─────────────────────────────────────┐
-│  Frontend  (templates/index.html)   │
-│  Multi-step form · Range sliders    │
-│  Risk badge · What-if cards         │
-└──────────────┬──────────────────────┘
-               │ POST /predict  (JSON)
-               ▼
-┌─────────────────────────────────────┐
-│  Flask API  (app.py)                │
-│  Input parsing · Field validation   │
-│  REQUIRED_FIELDS check              │
-│  Range & type sanitisation          │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  Startup Validation Layer           │
-│  load_model()  → smoke-test pkl     │
-│  load_metadata() → schema check     │
-│  FEATURE_ORDER match guard          │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  Prediction Engine                  │
-│  sklearn Pipeline                   │
-│  StandardScaler → GBR               │
-│  predict_premium() · get_risk()     │
-│  what-if re-predictions             │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│  Response Layer                     │
-│  prediction · risk profile          │
-│  whatif scenarios · security hdrs   │
-└─────────────────────────────────────┘
-```
-
-**Frontend** collects ten inputs across four guided steps and sends a single JSON POST. It renders the result — dollar amount, risk badge, three what-if savings cards, and a plain-English advice line — without a page reload.
-
-**Flask API** performs input parsing and field-level validation before any model call. Missing or malformed fields return structured 400 errors; the model is never called with incomplete data.
-
-**Startup Validation Layer** runs at import time, before the server accepts connections. If the model file is missing, corrupt, or was trained on a different feature schema than the app expects, the process exits with a clear error message.
-
-**Prediction Engine** wraps the sklearn `Pipeline` (scaler + GBR). It handles the FEATURE_ORDER → numpy array assembly, prediction, risk scoring, and three parallel what-if re-predictions in a single request cycle.
-
-**Response Layer** assembles the JSON payload and attaches security headers to every outbound response via an `after_request` hook.
-
----
-
-## Machine Learning Pipeline
-
-### Dataset
-
-The base dataset is the **Medical Cost Personal Dataset** (Brett Lantz, *Machine Learning with R*), a widely-used benchmark of 1,338 real de-identified US insurance records. It contains seven columns: `age`, `sex`, `bmi`, `children`, `smoker`, `region`, and `charges` (the annual premium — the training target).
-
-Dataset URL: `https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv`
-
-The dataset is downloaded once and cached as `insurance_base.csv`. All subsequent training runs use the cache; the `--offline` flag forces cache-only mode for reproducible builds.
-
-### Feature Engineering
-
-The seven-column base dataset is extended to ten features by generating three additional columns with medically plausible statistical correlations, anchored to real risk factors — not to the target variable.
-
-| Generated Feature | Generation Logic |
-|---|---|
-| `past_consultations` | Poisson-sampled; rate driven by age, BMI, smoker status, and number of children |
-| `num_of_steps` | Normal-sampled; mean decreases for smokers, obese individuals, and older patients |
-| `NUmber_of_past_hospitalizations` | Poisson-sampled; rate driven by smoker status, BMI above 30, and age |
-| `Anual_Salary` | Normally-sampled around an age-based career curve; weakly correlated with age |
-
-Crucially, **none of these features is derived from `charges`** (the target). This was the root cause of the v2.1 leakage issue, corrected in v2.2.
-
-### Preprocessing
-
-All features pass through a `StandardScaler` as the first step of a `sklearn.pipeline.Pipeline`. Scaling is fit only on training data and applied identically to test data and at inference time — no data leaks through the scaler.
-
-### Train / Test Split
-
-- **Split**: 80% train (1,070 rows) / 20% test (268 rows)
-- **Stratification**: stratified on the `smoker` column to preserve the ~20% smoker prevalence in both partitions
-- **Random state**: `42` for full reproducibility
-
-### Model
-
-**Algorithm**: `GradientBoostingRegressor` inside a `sklearn.pipeline.Pipeline`
-
-| Hyperparameter | Value | Rationale |
+| Category | Feature | Detail |
 |---|---|---|
-| `n_estimators` | 400 | Sufficient trees for the dataset size without overfitting |
-| `max_depth` | 5 | Captures non-linear interactions without excessive depth |
-| `learning_rate` | 0.04 | Conservative rate; pairs with 400 trees for stable convergence |
-| `subsample` | 0.85 | Stochastic gradient boosting; reduces variance |
-| `min_samples_leaf` | 5 | Prevents overly specific leaf splits |
-| `max_features` | 0.8 | Feature subsampling per split; additional regularisation |
-| `random_state` | 42 | Reproducibility |
-
-### Cross-Validation
-
-5-fold cross-validation is run on the full dataset (not just the training split) after hold-out evaluation. This gives a generalisation estimate that accounts for variance across different data partitions.
-
-### Serialisation & Metadata
-
-The trained pipeline is serialised with `joblib.dump()` to `insurance_model.pkl`. Training also generates `model_metadata.json`, which records:
-
-- Training timestamp and dataset source
-- `FEATURE_ORDER` list and `feature_count`
-- Hold-out and cross-validation metrics
-- Per-feature importances
-- Full feature schema (type and range for each input)
-
-At startup, `app.py` loads this metadata and asserts that its `features` list matches `FEATURE_ORDER` exactly. Any discrepancy aborts the server.
-
-### Inference Workflow
-
-1. JSON payload arrives at `POST /predict`
-2. `REQUIRED_FIELDS` presence check
-3. `sanitise_float()` on every value
-4. Range validation (age 0–120, BMI 0–80, etc.)
-5. Feature dict assembled in `FEATURE_ORDER` sequence
-6. `np.array(...).reshape(1, -1)` fed to `pipeline.predict()`
-7. `get_risk_profile()` scores the prediction
-8. Three what-if re-predictions computed (non-smoker, healthy BMI, ten years younger)
-9. JSON response returned
+| **ML** | Gradient Boosting Regressor | sklearn Pipeline: StandardScaler → GBR (400 trees, depth 5, lr 0.04) |
+| **ML** | Leakage-free model | v2.2 audit permanently removed `Claim_Amount` & `Hospital_expenditure` (30.3% importance was leakage) |
+| **ML** | Honest metrics | R² 0.8573, MAE $2,921.58, CV R² 0.8402 ± 0.0325 — lower than v2.1 because they are real |
+| **ML** | Metadata versioning | `model_metadata.json` records feature list, types, ranges, importances, and training timestamp |
+| **API** | Risk profile engine | Scores each prediction on smoker status, BMI, age, and dollar amount → Low / Medium / High |
+| **API** | What-if simulations | Three parallel re-predictions per request: non-smoker, healthy BMI (<25), ten years younger |
+| **API** | Field-level validation | Presence check → type sanitisation → range validation before any model call |
+| **Security** | HTTP security headers | CSP, `X-Frame-Options: DENY`, `nosniff`, `X-XSS-Protection`, `Referrer-Policy` on every response |
+| **Reliability** | Fail-fast startup | `load_model()` + `load_metadata()` run at import time; `sys.exit(1)` on any failure before Flask binds |
+| **Reliability** | Feature schema guard | `FEATURE_ORDER` in `app.py` compared against `features` in `model_metadata.json`; mismatch aborts boot |
+| **Monitoring** | `/health` endpoint | Liveness probe returning model status and version |
+| **Monitoring** | `/system-status` endpoint | Full diagnostics: uptime, memory, model size, training metrics, top-5 features |
+| **Deployment** | `render.yaml` | Build-phase trains model on Render; Gunicorn 1 worker / 2 threads for 512 MB free tier |
+| **Frontend** | Four-step wizard | Animated progress bar, range sliders with live value display, toggle buttons for binary fields |
+| **Frontend** | Results dashboard | Premium dollar figure, risk badge, up to 3 savings cards, plain-English advice |
+| **Frontend** | Deep matte-blue theme | CSS custom properties, radial glows, dot-grid texture, semantic risk badge colours |
 
 ---
 
-## Feature List
+## Live Demo
 
-| # | Feature | Type | Range | Importance | Why It Matters |
-|---|---|---|---|---|---|
-| 1 | `age` | float | 18–64 | 10.25% | Premium risk increases non-linearly with age; older patients accumulate more health events |
-| 2 | `sex` | binary | 0/1 | 0.27% | Biological sex influences certain disease incidences and actuarial risk tables |
-| 3 | `bmi` | float | 15–55 | 16.84% | BMI above 30 is strongly associated with diabetes, hypertension, and cardiovascular disease |
-| 4 | `children` | int | 0–5 | 1.16% | Dependants increase total family medical expenditure and affect premium tiers |
-| 5 | `smoker` | binary | 0/1 | **59.03%** | Smoking is the single strongest predictor; smokers pay 2–4× more on average in this dataset |
-| 6 | `past_consultations` | int | 0–20 | 2.00% | Frequent outpatient visits signal chronic conditions that inflate ongoing costs |
-| 7 | `num_of_steps` | float | 0–20,000 | 6.08% | Daily activity level is a proxy for general fitness; lower steps correlate with higher health risk |
-| 8 | `NUmber_of_past_hospitalizations` | int | 0–10 | 1.05% | Prior hospitalisation history is a direct indicator of elevated future medical spend |
-| 9 | `Anual_Salary` | float | $20k–$300k | 2.57% | Income correlates with healthcare access behaviour and indirectly with lifestyle factors |
-| 10 | `region` | int | 0–3 | 0.75% | Geographic region affects provider pricing, state regulations, and population health baselines |
-
-Feature importances are extracted from the GBR's `feature_importances_` attribute post-training and recorded in `model_metadata.json`. They sum to 1.0.
-
----
-
-## Model Performance
-
-| Metric | Value |
+| Resource | Link |
 |---|---|
-| **R²** (hold-out test set) | **0.8573** |
-| **Cross-Validation R²** (5-fold) | **0.8402 ± 0.0325** |
-| **MAE** | **$2,921.58** |
-| **RMSE** | **$4,588.44** |
-| Train size | 1,070 records |
-| Test size | 268 records |
+| **GitHub Repository** | https://github.com/ArunVijaykumarcsds/InsureIQ |
+| **Live Deployment** | Deployed on Render (free tier — allow ~5–8 s cold start) |
+| **Health Check** | `GET /health` → `{"status":"healthy","model_loaded":true,"version":"2.2.0"}` |
+| **System Status** | `GET /system-status` → full runtime diagnostics |
 
-### Why These Metrics Are Trustworthy
-
-An R² of 0.86 on a 1,338-row insurance dataset is a strong result — and it is an *honest* one. The model is not over-fitted: the hold-out R² (0.8573) and the cross-validation mean (0.8402) are within 2 percentage points of each other, and the CV standard deviation of ±0.0325 indicates stable generalisation across data folds.
-
-The MAE of ~$2,922 means the model's predictions are within roughly $2,900 of the true annual premium on average. Given that premiums in this dataset range from $1,122 to $63,770 — a span of over $62,000 — this represents a mean absolute error of approximately 4.7% of the full range. For a 1,338-row dataset with four synthetic features and no external enrichment, this is a realistic and defensible result.
-
-Contrast this with the v2.1 metrics (R² = 0.93, MAE = $1,444), which appeared stronger but were inflated by `Claim_Amount` — a feature derived directly from the target variable. The v2.2 metrics reflect what the model genuinely learned about insurance risk.
+> **Screenshots:** Add captures of the Step 1 form (desktop), results panel with High Risk badge and what-if cards, and mobile view after deployment.
 
 ---
 
-## Leakage Audit & Model Integrity
+## System Architecture
 
-### What Happened in v2.1
+```mermaid
+flowchart TD
+    Browser["🌐 Browser\n(User)"]
 
-The original feature set included two variables that appeared legitimate but were not:
+    subgraph Frontend["Frontend Layer — templates/index.html"]
+        Form["Multi-Step Form\nSteps 1–4"]
+        JS["Vanilla JS\ncollectData()"]
+        Results["Results Dashboard\nRisk Badge · What-If Cards"]
+    end
 
-- **`Claim_Amount`**: Generated as `charges × uniform(0.05, 0.55) × normal(1.0, 0.12)`. This is a direct linear transformation of `charges` — the training target — with multiplicative noise. Its Pearson correlation with the target was **r ≈ 0.85**, giving it an R² of ~0.72 when used alone. The model assigned it **29.7% feature importance**.
-- **`Hospital_expenditure`**: Generated as a function of past hospitalisation counts *and* `Claim_Amount`, inheriting secondary leakage from the same source. It carried 0.6% feature importance.
+    subgraph Flask["Flask Application — app.py"]
+        Router["Route: POST /predict\nGET /health\nGET /system-status"]
+        Validator["Input Validator\nREQUIRED_FIELDS check\nsanitise_float()\nRange guards"]
+        SecHdr["after_request Hook\nCSP · X-Frame-Options\nX-Content-Type-Options\nX-XSS-Protection"]
+        ErrHandlers["Error Handlers\n400 · 404 · 405 · 500"]
+    end
 
-Together, these two features consumed **30.3% of the model's explanatory power** and allowed the GBR to learn a shortcut — predicting the target from a noisy copy of itself — rather than learning the true relationships between age, BMI, lifestyle, and premium cost.
+    subgraph Startup["Startup Validation — runs before Flask binds"]
+        LoadModel["load_model()\ndeserialise pkl\nsmoke-test predict()"]
+        LoadMeta["load_metadata()\nparse JSON\nFEATURE_ORDER match guard"]
+    end
 
-### How It Was Detected
+    subgraph Engine["Prediction Engine"]
+        Pipeline["sklearn Pipeline\nStandardScaler → GBR"]
+        RiskFn["get_risk_profile()\nscore → Low/Medium/High"]
+        WhatIf["3× what-if re-predictions\nnon-smoker · BMI<25 · age-10"]
+    end
 
-A formal leakage audit traced the synthetic data generation code in `train_model.py` against the target variable `charges`. The line:
+    subgraph Artifacts["Model Artifacts"]
+        PKL["insurance_model.pkl\n~1,291 KB"]
+        Meta["model_metadata.json\nfeatures · metrics · schema"]
+        CSV["insurance_base.csv\n1,338 records"]
+    end
+
+    Browser -->|"User fills form"| Form
+    Form --> JS
+    JS -->|"POST /predict (JSON)"| Router
+    Router --> Validator
+    Validator -->|"Valid inputs"| Engine
+    Engine --> Pipeline
+    Pipeline --> RiskFn
+    RiskFn --> WhatIf
+    WhatIf -->|"JSON response"| SecHdr
+    SecHdr -->|"200 + security headers"| Results
+    Results --> Browser
+
+    Startup --> LoadModel
+    Startup --> LoadMeta
+    LoadModel --> PKL
+    LoadMeta --> Meta
+    PKL -->|"loaded at import"| Pipeline
+    Meta -->|"schema validation"| LoadMeta
+    CSV -->|"training source"| PKL
+```
+
+---
+
+## Repository Structure
+
+```
+InsureIQ/
+├── app.py                   # Flask application — all routes, validation, prediction, security
+├── train_model.py           # ML pipeline — data acquisition, feature engineering, GBR training, export
+├── insurance_model.pkl      # Trained sklearn Pipeline (StandardScaler + GBR); ~1,291 KB
+├── model_metadata.json      # Training artefact — version, metrics, feature schema, importances
+├── insurance_base.csv       # Cached Medical Cost Personal Dataset (1,338 records)
+├── requirements.txt         # Pinned Python dependencies (5 packages)
+├── render.yaml              # Render deployment config — build command trains model at deploy time
+├── .python-version          # Python 3.11 pin
+├── .gitignore               # Standard Python ignores
+├── README.md                # This file
+└── templates/
+    └── index.html           # Single-page frontend — multi-step form + results dashboard (vanilla HTML/CSS/JS)
+```
+
+**File responsibilities:**
+
+| File | Lines | Role |
+|---|---|---|
+| `app.py` | 307 | Flask routes, startup validation, security headers, error handlers, prediction engine |
+| `train_model.py` | 322 | Dataset download/cache, feature engineering, pipeline training, metadata export |
+| `model_metadata.json` | 116 | Ground truth for model version, feature schema, and all evaluation metrics |
+| `templates/index.html` | — | Complete SPA frontend — no framework, no build step |
+| `render.yaml` | 12 | Zero-config Render deployment with build-time model training |
+| `requirements.txt` | 5 | Exact pinned dependencies: Flask, scikit-learn, NumPy, joblib, Gunicorn |
+
+---
+
+## Application Workflow
+
+```mermaid
+flowchart TD
+    A([User opens app]) --> B[Step 1 — Personal Profile\nAge · Sex · Children · Smoker]
+    B --> C[Step 2 — Physical Health\nBMI slider · Past Consultations · Daily Steps]
+    C --> D[Step 3 — Medical History\nPast Hospitalisations]
+    D --> E[Step 4 — Financial Profile\nAnnual Salary · Region]
+    E --> F{Submit — POST /predict}
+
+    F --> G{REQUIRED_FIELDS\npresence check}
+    G -->|Missing field| ERR1[400 — Missing fields]
+    G -->|All present| H{sanitise_float()\ntype check}
+    H -->|Non-numeric| ERR2[400 — Invalid type]
+    H -->|Numeric| I{Range validation\nage·bmi·sex·smoker\nchildren·region}
+    I -->|Out of range| ERR3[400 — Validation error]
+    I -->|Valid| J[Assemble FEATURE_ORDER array\nnp.array reshape 1×10]
+
+    J --> K[pipeline.predict()]
+    K --> L[get_risk_profile()\nscore from smoker+BMI+age+prediction]
+    L --> M{Parallel what-if\nre-predictions}
+    M --> N[non-smoker prediction\nif smoker==1]
+    M --> O[healthy BMI prediction\nif bmi > 24.9]
+    M --> P[age−10 prediction\nif age > 30]
+
+    N & O & P --> Q[Assemble JSON response]
+    Q --> R[after_request hook\nattach security headers]
+    R --> S([Results Dashboard\nPremium · Risk Badge · What-If Cards])
+```
+
+---
+
+## Backend Architecture
+
+### Routes (`app.py`)
+
+| Method | Route | Handler | Purpose |
+|---|---|---|---|
+| `GET` | `/` | `index()` | Renders `templates/index.html` with version context |
+| `POST` | `/predict` | `predict()` | Full prediction pipeline — validation → inference → response |
+| `GET` | `/health` | `health()` | Liveness probe — returns 200 + model status |
+| `GET` | `/system-status` | `system_status()` | Runtime diagnostics — uptime, memory, metrics, top features |
+
+### Core Functions
+
+**`load_model()`** — Startup function (runs at module import, before Flask binds):
+1. Verifies `insurance_model.pkl` exists at `BASE_DIR`
+2. Deserialises with `joblib.load()`
+3. Runs a smoke-test: `model.predict(np.zeros((1, 10)))` must return shape `(1,)`
+4. Calls `sys.exit(1)` on any failure
+
+**`load_metadata()`** — Startup function:
+1. Verifies `model_metadata.json` exists
+2. Parses JSON
+3. Compares `meta['features']` against `FEATURE_ORDER` — exact list equality required
+4. Calls `sys.exit(1)` on mismatch
+
+**`sanitise_float(value, field)`** — Type safety wrapper around `float()`. Raises `ValueError` with the field name on failure.
+
+**`predict_premium(inputs)`** — Assembles `FEATURE_ORDER`-ordered array, calls `pipeline.predict()`, and returns `max(0.0, round(result, 2))`.
+
+**`get_risk_profile(prediction, age, bmi, smoker)`** — Scoring function:
+- `smoker == 1` → +40 points
+- `bmi >= 30` → +20 points; `bmi >= 25` → +10 points
+- `age >= 55` → +20 points; `age >= 40` → +10 points
+- `prediction > $20,000` → +20 points; `prediction > $10,000` → +10 points
+- Score ≥ 60 → High Risk 🔴; Score ≥ 30 → Medium Risk 🟡; else → Low Risk 🟢
+
+### Security Headers Hook
+
+Applied via `@app.after_request` — no route is exempt:
 
 ```python
-Claim_Amount = np.clip(charges * claim_frac * claim_noise, 0, 50000)
+h['X-Content-Type-Options']  = 'nosniff'
+h['X-Frame-Options']         = 'DENY'
+h['X-XSS-Protection']        = '1; mode=block'
+h['Referrer-Policy']         = 'strict-origin-when-cross-origin'
+h['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' ..."
 ```
 
-makes the derivation explicit. Once the audit confirmed the correlation coefficient and feature importance share, the fix was unambiguous.
+### Error Handlers
 
-### How It Was Fixed
+`400`, `404`, `405`, `500` all return structured JSON `{"error": "..."}` with appropriate status codes. The 500 handler logs the full exception stack via `log.exception()`.
 
-In v2.2, both features were **permanently removed** from every layer of the stack:
+### Constants
 
-- `train_model.py` — generation code deleted; removed from `FEATURE_ORDER` and `feature_schema`
-- `app.py` — removed from `FEATURE_ORDER`, `REQUIRED_FIELDS`, and the `predict()` inputs dict
-- `templates/index.html` — form fields deleted; JS `collectData()` payload updated
-- `insurance_model.pkl` — retrained from scratch; `n_features_in_ = 10` confirmed
-- `model_metadata.json` — regenerated; `feature_count = 10` confirmed
+```python
+VERSION       = '2.2.0'
+FEATURE_ORDER = ['age','sex','bmi','children','smoker',
+                 'past_consultations','num_of_steps',
+                 'NUmber_of_past_hospitalizations',
+                 'Anual_Salary','region']
+REQUIRED_FIELDS = ['age','sex','bmi','children','smoker',
+                   'past_consultations','num_of_steps',
+                   'past_hospitalizations',
+                   'annual_salary','region']
+```
 
-A full post-fix grep across all text files confirmed **zero occurrences** of either feature name in any source file.
-
-### The Impact on Metrics — and Why It Matters
-
-| | v2.1 (leaked) | v2.2 (clean) |
-|---|---|---|
-| R² | 0.9295 | **0.8573** |
-| MAE | $1,444 | **$2,922** |
-
-R² dropped by 7 points. This is not a regression — it is the model being forced to learn from legitimate signals only. The v2.2 model makes predictions that are grounded in age, BMI, smoking status, and medical history rather than in a noisy echo of the answer.
-
-Shipping honest metrics rather than inflated ones is an engineering choice. A model that reports R² = 0.93 due to leakage is worse than one that reports R² = 0.86 without it, because the former will silently degrade the moment the leaking feature is unavailable, sparse, or misreported by users. The v2.2 model is robust to that failure mode.
+Note: `REQUIRED_FIELDS` uses front-end friendly names (e.g., `past_hospitalizations`, `annual_salary`); the `predict()` route maps these to internal `FEATURE_ORDER` names.
 
 ---
 
-## Security Features
+## Frontend Architecture
 
-Security headers are applied to every HTTP response via a Flask `after_request` hook. No route is exempt.
+### Design System
 
-| Header | Value | Protection |
+The interface uses a **deep matte-blue dark theme** built on CSS custom properties. Key values extracted from `templates/index.html`:
+
+- **Background**: near-black `#07111f` with radial gradient glow and fine dot-grid texture
+- **Primary accent**: `#2d7ff9` (blue) / `#4da3ff` (highlight)
+- **Risk badge colours**: green (Low) · amber (Medium) · red (High) — semantic overrides only
+- **Font**: Inter / system-ui
+- **No external CSS framework** — all styles are hand-crafted CSS custom properties
+
+### Multi-Step Form
+
+Four steps navigated by Previous / Next buttons with an animated progress bar (25% → 50% → 75% → 100%):
+
+| Step | Fields | Input Type |
 |---|---|---|
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline' ...` | Prevents XSS via inline script injection from untrusted origins |
-| `X-Frame-Options` | `DENY` | Blocks clickjacking by preventing the page from being embedded in an iframe |
-| `X-Content-Type-Options` | `nosniff` | Stops browsers from MIME-sniffing a response away from the declared content type |
-| `X-XSS-Protection` | `1; mode=block` | Activates the browser's built-in XSS filter and blocks the page on detection |
-| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information sent to third-party origins |
+| 1 — Personal Profile | Age, Sex, Children, Smoker | Number input, toggle buttons |
+| 2 — Physical Health | BMI, Past Consultations, Daily Steps | Range sliders with live value display |
+| 3 — Medical History | Past Hospitalisations | Range slider |
+| 4 — Financial Profile | Annual Salary, Region | Number input, segmented buttons |
 
-**Input validation** is enforced at two layers:
+The JavaScript `collectData()` function assembles all form values into the exact JSON payload expected by `POST /predict`. Values are preserved on back-navigation.
 
-1. **Presence check** — `REQUIRED_FIELDS` verified before any parsing
-2. **Type sanitisation** — `sanitise_float()` raises a typed `ValueError` on non-numeric input
-3. **Range validation** — age, BMI, sex, smoker, children, and region all checked against valid ranges before the model call
+### Results Dashboard
 
-**Startup validation** prevents a compromised or mis-versioned model from serving predictions:
-
-- `load_model()` — verifies the pkl file exists, deserialises cleanly, and passes a zero-vector smoke test
-- `load_metadata()` — verifies the JSON is parseable and that `features` matches `FEATURE_ORDER` exactly
-- Both call `sys.exit(1)` on failure, preventing a degraded or misconfigured server from accepting traffic
+After prediction, the page scrolls to a results panel containing:
+- **Premium figure** — large formatted dollar amount
+- **Risk badge** — colour-coded emoji indicator with score and level text
+- **What-if cards** — up to three savings cards (smoking cessation, healthy BMI, age comparison)
+- **Personalised advice** — plain-English recommendation from `get_risk_profile()`
+- **Recalculate button** — returns to form without page reload
 
 ---
 
-## Health Monitoring
+## API Documentation
+
+### `POST /predict`
+
+**Request body (JSON):**
+
+```json
+{
+  "age": 35,
+  "sex": 1,
+  "bmi": 28.5,
+  "children": 2,
+  "smoker": 0,
+  "past_consultations": 4,
+  "num_of_steps": 7500,
+  "past_hospitalizations": 1,
+  "annual_salary": 75000,
+  "region": 2
+}
+```
+
+| Field | Type | Validation Range | Notes |
+|---|---|---|---|
+| `age` | float | 0 – 120 | Patient age in years |
+| `sex` | int | 0 or 1 | 0 = female, 1 = male |
+| `bmi` | float | 0 – 80 | Body mass index |
+| `children` | int | 0 – 10 | Number of dependants |
+| `smoker` | int | 0 or 1 | 0 = non-smoker, 1 = smoker |
+| `past_consultations` | int | 0 – 20 | Outpatient visits in past year |
+| `num_of_steps` | float | 0 – 20,000 | Average daily step count |
+| `past_hospitalizations` | int | 0 – 10 | Prior hospital admissions |
+| `annual_salary` | float | 20,000 – 300,000 | Annual income in USD |
+| `region` | int | 0 – 3 | 0=NE, 1=NW, 2=SE, 3=SW |
+
+**Success response (200):**
+
+```json
+{
+  "prediction": 12847.32,
+  "risk": {
+    "level": "Medium Risk",
+    "color": "medium",
+    "icon": "🟡",
+    "score": 30,
+    "advice": "Moderate risk profile. Regular checkups and a healthy BMI can help reduce costs."
+  },
+  "whatif": {
+    "nonsmoker": null,
+    "healthy_bmi": 10234.18,
+    "age_diff": 9821.44,
+    "current_age": 35,
+    "current_bmi": 28.5,
+    "is_smoker": false
+  }
+}
+```
+
+**Error responses:**
+
+| Status | Condition | Example body |
+|---|---|---|
+| 400 | Missing fields | `{"error": "Missing required fields: smoker, region"}` |
+| 400 | Non-numeric value | `{"error": "'bmi' must be a number, got: 'abc'"}` |
+| 400 | Out-of-range value | `{"error": "Validation error: BMI must be 0–80"}` |
+| 400 | Non-JSON body | `{"error": "Request body must be JSON."}` |
+| 500 | Pipeline failure | `{"error": "Prediction failed. Please try again."}` |
+
+---
 
 ### `GET /health`
 
-Lightweight liveness probe. Returns 200 if the server is running and the model is loaded.
+Lightweight liveness probe.
 
 ```json
 {
@@ -308,9 +379,11 @@ Lightweight liveness probe. Returns 200 if the server is running and the model i
 }
 ```
 
+---
+
 ### `GET /system-status`
 
-Full diagnostics endpoint. Returns model metadata, runtime metrics, memory usage, and top feature importances.
+Full runtime diagnostics including model metadata, memory usage, and top feature importances.
 
 ```json
 {
@@ -323,7 +396,7 @@ Full diagnostics endpoint. Returns model metadata, runtime metrics, memory usage
   "memory_mb": 214.3,
   "model_metadata": {
     "trained_at": "2026-06-06T07:11:48",
-    "dataset_source": "https://raw.githubusercontent.com/...",
+    "dataset_source": "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv",
     "dataset_size": 1338,
     "algorithm": "GradientBoostingRegressor (sklearn Pipeline + StandardScaler)",
     "feature_count": 10,
@@ -347,21 +420,233 @@ Full diagnostics endpoint. Returns model metadata, runtime metrics, memory usage
 
 ---
 
-## Project Structure
+## Machine Learning Pipeline
 
+```mermaid
+flowchart LR
+    A[("Medical Cost\nPersonal Dataset\n1,338 records")] -->|"fetch_dataset()\nDownload or load cache"| B["insurance_base.csv\n7 columns:\nage sex bmi children\nsmoker region charges"]
+
+    B -->|"engineer_features()\nrng seed=42"| C["Extended Dataset\n10 columns\n1,338 rows"]
+
+    subgraph FE ["Feature Engineering"]
+        C1["past_consultations\nPoisson(age+BMI+smoker+children)"]
+        C2["num_of_steps\nNormal(10000 − smoker×2500 − BMI×150 − age×50)"]
+        C3["NUmber_of_past_hospitalizations\nPoisson(smoker×2.2 + BMI_excess + age_factor)"]
+        C4["Anual_Salary\nNormal(30000 + age×1200 + sex_offset)"]
+    end
+
+    C --> C1 & C2 & C3 & C4
+
+    C1 & C2 & C3 & C4 --> D["train_test_split\n80% train (1,070)\n20% test (268)\nstratify=smoker"]
+
+    D -->|"X_train, y_train"| E["sklearn Pipeline\nStandardScaler\n↓\nGradientBoostingRegressor\nn_estimators=400\nmax_depth=5\nlr=0.04\nsubsample=0.85"]
+
+    E -->|"pipe.fit(X_train, y_train)"| F["Trained Pipeline"]
+
+    F -->|"pipe.predict(X_test)"| G["Hold-out Evaluation\nR²=0.8573\nMAE=$2,921.58\nRMSE=$4,588.44"]
+
+    F -->|"cross_val_score cv=5"| H["5-Fold CV\nR²=0.8402 ± 0.0325"]
+
+    G & H --> I["joblib.dump() → insurance_model.pkl\nfeature_importances_ → model_metadata.json"]
+
+    I -->|"Startup validation\nFEATURE_ORDER check"| J["Flask API\napp.py"]
 ```
-insureiq/
-├── app.py                  # Flask application — routing, validation, prediction, security
-├── train_model.py          # ML pipeline — data acquisition, feature engineering, training, export
-├── insurance_model.pkl     # Trained sklearn Pipeline (generated by train_model.py)
-├── model_metadata.json     # Training artefact — metrics, schema, feature importances
-├── insurance_base.csv      # Cached base dataset (downloaded from GitHub on first run)
-├── requirements.txt        # Pinned Python dependencies
-├── render.yaml             # Render deployment configuration
-├── README.md               # This file
-└── templates/
-    └── index.html          # Single-page frontend — multi-step form, results dashboard
+
+### Dataset
+
+**Medical Cost Personal Dataset** (Brett Lantz, *Machine Learning with R*) — 1,338 de-identified US insurance records. Seven original columns: `age`, `sex`, `bmi`, `children`, `smoker`, `region`, `charges`.
+
+- Source URL: `https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv`
+- Cached as `insurance_base.csv` after first download
+- `--offline` flag forces cache-only mode (used in Render deploys when `insurance_base.csv` is committed)
+
+### Hyperparameters (from `train_model.py`)
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| `n_estimators` | 400 | Sufficient capacity without overfitting on 1,338 records |
+| `max_depth` | 5 | Captures non-linear interactions (smoker × BMI) without excessive depth |
+| `learning_rate` | 0.04 | Conservative rate; requires more trees but improves stability |
+| `subsample` | 0.85 | Stochastic gradient boosting — reduces variance |
+| `min_samples_leaf` | 5 | Prevents overly specific leaf splits |
+| `max_features` | 0.8 | Feature subsampling per split — additional regularisation |
+| `random_state` | 42 | Full reproducibility |
+| `warm_start` | False | Clean training on every run |
+
+### Data Split
+
+- 80 / 20 train-test split, `random_state=42`
+- Stratified on the `smoker` column (binary, ~20% prevalence) to preserve smoker ratio in both partitions
+
+---
+
+## Feature Engineering
+
+| # | Feature Name | Source | Type | Range | Generation Logic |
+|---|---|---|---|---|---|
+| 1 | `age` | Real data | float | 18–64 | Passed through from base dataset |
+| 2 | `sex` | Real data | binary | 0/1 | `0` = female, `1` = male; encoded from string |
+| 3 | `bmi` | Real data | float | 15–55 | Passed through from base dataset |
+| 4 | `children` | Real data | int | 0–5 | Passed through from base dataset |
+| 5 | `smoker` | Real data | binary | 0/1 | `1` = yes; stratification column for train split |
+| 6 | `past_consultations` | **Synthetic** | int | 0–20 | `Poisson(age_factor + smoker×3.5 + BMI_excess + children×0.5)` |
+| 7 | `num_of_steps` | **Synthetic** | float | 0–20,000 | `Normal(10000 − smoker×2500 − BMI_penalty − age×50, σ=1200)` |
+| 8 | `NUmber_of_past_hospitalizations` | **Synthetic** | int | 0–10 | `Poisson(smoker×2.2 + BMI_excess + age_factor)` |
+| 9 | `Anual_Salary` | **Synthetic** | float | $20k–$300k | `Normal(30000 + age×1200 + sex_offset, σ=12000)` rounded to $1,000 |
+| 10 | `region` | Real data | int | 0–3 | `{northeast:0, northwest:1, southeast:2, southwest:3}` |
+
+**Leakage safeguard:** All four synthetic features are derived exclusively from `age`, `sex`, `bmi`, `children`, `smoker`, and `region`. None depends on `charges` (the target). This was the root cause of the v2.1 failure.
+
+---
+
+## Model Performance
+
+All metrics are recorded in `model_metadata.json` (trained 2026-06-06T07:11:48 UTC):
+
+| Metric | Value | Context |
+|---|---|---|
+| **R² (hold-out test set)** | **0.8573** | 268 unseen records |
+| **Cross-Validation R² (5-fold)** | **0.8402 ± 0.0325** | Full 1,338 records |
+| **MAE** | **$2,921.58** | Mean absolute error in USD |
+| **RMSE** | **$4,588.44** | Root mean squared error in USD |
+| Training time | 0.8 seconds | Single CPU, 1,070 training records |
+| Train set size | 1,070 records | 80% of 1,338 |
+| Test set size | 268 records | 20% of 1,338 |
+
+### Metric Interpretation
+
+An R² of 0.8573 on a 1,338-row dataset is strong — and it is honest. The hold-out R² (0.8573) and the 5-fold CV mean (0.8402) differ by only 1.7 percentage points, with a CV standard deviation of ±0.0325, confirming stable generalisation across folds.
+
+Premium range in this dataset: $1,122 – $63,770 (span of $62,648). The MAE of $2,922 represents approximately 4.7% of the full range — a defensible result with no external data enrichment.
+
+### v2.1 vs v2.2 Comparison
+
+| Metric | v2.1 (leaked) | v2.2 (clean) | Change |
+|---|---|---|---|
+| R² | 0.9295 | **0.8573** | −7.2 pp — correct |
+| MAE | $1,444 | **$2,921** | +$1,477 — honest |
+| Leak source | `Claim_Amount` (29.7%) | *removed* | — |
+
+The lower v2.2 numbers are the better result. A model that reports 0.93 because it learned from a noisy copy of the target will silently degrade in production; the v2.2 model is robust to that failure mode.
+
+---
+
+## Feature Importance & Explainability
+
+Importances from `model_metadata.json` — extracted from `GBR.feature_importances_`, summing to 1.0:
+
+| Rank | Feature | Importance | Interpretation |
+|---|---|---|---|
+| 1 | `smoker` | **59.03%** | Dominant signal — smokers pay 2–4× more in this dataset |
+| 2 | `bmi` | **16.84%** | BMI >30 strongly correlated with diabetes, cardiovascular disease |
+| 3 | `age` | **10.25%** | Premium risk grows non-linearly with age |
+| 4 | `num_of_steps` | **6.08%** | Daily activity is a fitness/health proxy |
+| 5 | `Anual_Salary` | **2.57%** | Correlates with healthcare access behaviour |
+| 6 | `past_consultations` | **2.00%** | Frequent outpatient visits signal chronic conditions |
+| 7 | `children` | **1.16%** | Dependants increase total family medical spend |
+| 8 | `NUmber_of_past_hospitalizations` | **1.05%** | Direct indicator of elevated future medical cost |
+| 9 | `region` | **0.75%** | Geographic pricing and regulation differences |
+| 10 | `sex` | **0.27%** | Lowest importance — biological sex has minimal actuarial weight in this dataset |
+
+The top 3 features (`smoker`, `bmi`, `age`) account for 86.1% of total importance — consistent with actuarial literature on health insurance pricing.
+
+---
+
+## Security
+
+### HTTP Security Headers
+
+Applied on every response via `@app.after_request`:
+
+| Header | Value | Protection |
+|---|---|---|
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self' 'unsafe-inline' fonts.googleapis.com cdnjs.cloudflare.com` | Blocks XSS via unauthorized script injection |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking via iframe embedding |
+| `X-Content-Type-Options` | `nosniff` | Stops MIME-type sniffing attacks |
+| `X-XSS-Protection` | `1; mode=block` | Activates browser XSS filter and blocks the page on detection |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer leakage to third-party origins |
+
+### Input Validation (Three Layers)
+
+```python
+# Layer 1 — Presence check
+missing = [f for f in REQUIRED_FIELDS if f not in raw]
+
+# Layer 2 — Type sanitisation
+def sanitise_float(value, field):
+    try:    return float(value)
+    except: raise ValueError(f"'{field}' must be a number, got: {value!r}")
+
+# Layer 3 — Range validation
+validations = [
+    (0 <= age <= 120,       "age must be 0–120"),
+    (0 <= bmi <= 80,        "BMI must be 0–80"),
+    (sex in (0, 1),         "sex must be 0 or 1"),
+    (smoker in (0, 1),      "smoker must be 0 or 1"),
+    (0 <= children <= 10,   "children must be 0–10"),
+    (0 <= region <= 3,      "region must be 0–3"),
+]
 ```
+
+### Startup Guards (Fail-Fast)
+
+| Guard | Trigger | Action |
+|---|---|---|
+| Model file missing | `not os.path.exists(MODEL_PATH)` | `sys.exit(1)` with path and fix instruction |
+| Model deserialisation failure | `joblib.load()` raises | `sys.exit(1)` with exception message |
+| Smoke-test failure | `model.predict(zeros)` raises or wrong shape | `sys.exit(1)` |
+| Metadata file missing | `not os.path.exists(METADATA_PATH)` | `sys.exit(1)` |
+| JSON parse failure | `json.load()` raises | `sys.exit(1)` |
+| Feature schema mismatch | `meta['features'] != FEATURE_ORDER` | `sys.exit(1)` with both lists printed |
+
+---
+
+## Production Readiness
+
+### Deployment Architecture
+
+```mermaid
+flowchart TD
+    Dev["👨‍💻 Developer\nLocal Machine"]
+
+    subgraph GitHub["GitHub"]
+        Repo["Repository\nmain branch"]
+    end
+
+    subgraph Render["Render Cloud (Free Tier)"]
+        Build["Build Phase\npip install -r requirements.txt\npython train_model.py\n→ Downloads dataset\n→ Trains GBR (≈0.8s)\n→ Writes .pkl + metadata.json"]
+
+        subgraph Server["Web Service"]
+            Startup["Startup Validation\nload_model() smoke-test\nload_metadata() schema check\nFEATURE_ORDER guard"]
+            Gunicorn["Gunicorn\n1 worker · 2 threads\ntimeout 120s\n0.0.0.0:$PORT"]
+            Flask["Flask App v2.2.0\nRoutes · Validators\nSecurity Headers"]
+            Model["Loaded Pipeline\n~1,291 KB in memory"]
+        end
+    end
+
+    Users["🌐 Users"]
+
+    Dev -->|"git push"| Repo
+    Repo -->|"Auto-deploy trigger"| Build
+    Build -->|"Build success"| Startup
+    Startup -->|"All guards pass"| Gunicorn
+    Startup -->|"Any guard fails → sys.exit(1)"| Fail["❌ Deploy marked FAILED\nRender does not route traffic"]
+    Gunicorn --> Flask
+    Flask --> Model
+    Users -->|"HTTPS"| Gunicorn
+```
+
+### Resource Profile (Render Free Tier)
+
+| Resource | Value |
+|---|---|
+| RAM | ~210–250 MB (model ~1.3 MB + Python runtime ~150 MB) |
+| Workers | 1 (prevents doubling model memory) |
+| Threads | 2 (concurrent requests without second worker) |
+| Gunicorn timeout | 120 s |
+| Cold start | ~5–8 s |
+| Model training at build | ~0.8 s |
+| Model size on disk | ~1,291 KB |
 
 ---
 
@@ -369,45 +654,96 @@ insureiq/
 
 ### Prerequisites
 
-- Python 3.10 or higher
-- pip
-- Internet access for initial dataset download (or place `insurance_base.csv` manually)
+- Python 3.10 or higher (`.python-version` specifies 3.11)
+- `pip`
+- Internet access for initial dataset download (or pre-commit `insurance_base.csv`)
 
 ### Local Setup
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/insureiq.git
-cd insureiq
+git clone https://github.com/ArunVijaykumarcsds/InsureIQ.git
+cd InsureIQ
 
-# 2. (Optional) Create a virtual environment
+# 2. Create and activate a virtual environment
 python -m venv .venv
-source .venv/bin/activate        # macOS / Linux
-.venv\Scripts\activate           # Windows
+source .venv/bin/activate      # macOS / Linux
+.venv\Scripts\activate         # Windows
 
-# 3. Install dependencies
+# 3. Install pinned dependencies
 pip install -r requirements.txt
 
-# 4. Train the model
-#    Downloads the dataset, trains GBR, saves insurance_model.pkl and model_metadata.json
+# 4. Train the model (downloads dataset on first run, saves insurance_model.pkl + model_metadata.json)
 python train_model.py
 
-#    Offline mode (if dataset already cached):
+# Offline mode — if insurance_base.csv is already present:
 python train_model.py --offline
 
 # 5. Start the development server
 python app.py
+# → http://localhost:5000
 ```
 
-The server starts on `http://localhost:5000`. Open that URL in a browser to use the UI.
+The server starts on `http://localhost:5000`. Open that URL in a browser. The terminal will show startup validation output confirming the model and metadata are loaded before Flask begins accepting connections.
 
 ---
 
-## Render Deployment Guide
+## Local Development
 
-InsureIQ ships with a `render.yaml` that fully automates deployment on Render's free tier.
+### Typical workflow
 
-### `render.yaml` Explained
+```bash
+# Make changes to train_model.py or feature engineering
+python train_model.py          # Retrain and export fresh pkl + metadata
+
+# Verify metadata schema
+cat model_metadata.json | python -m json.tool
+
+# Start Flask in development mode
+python app.py                  # debug=False even locally (matches production)
+
+# Test health endpoint
+curl http://localhost:5000/health
+
+# Test system status
+curl http://localhost:5000/system-status | python -m json.tool
+
+# Send a prediction
+curl -X POST http://localhost:5000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"age":35,"sex":1,"bmi":28.5,"children":2,"smoker":0,
+       "past_consultations":4,"num_of_steps":7500,
+       "past_hospitalizations":1,"annual_salary":75000,"region":2}'
+```
+
+### Testing Feature Schema Changes
+
+If you modify `FEATURE_ORDER` in either `train_model.py` or `app.py`, you must keep them in sync. The startup guard will catch any mismatch:
+
+```
+[ERROR] Feature schema mismatch!
+  Metadata: ['age', 'sex', ...]
+  App expects: ['age', 'sex', ...]
+ → Re-run train_model.py to regenerate a compatible model.
+```
+
+This is by design: the guard prevents a stale model from silently serving predictions with a wrong feature layout.
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Set By | Value in Production | Purpose |
+|---|---|---|---|
+| `FLASK_ENV` | `render.yaml` | `production` | Disables Flask debug mode |
+| `PYTHONUNBUFFERED` | `render.yaml` | `"1"` | Ensures stdout/stderr are not buffered (log streaming) |
+| `PORT` | Render (injected) | Dynamic | Gunicorn binds to `0.0.0.0:$PORT` |
+
+No secrets or API keys are required. The application has no database and no external service dependencies at runtime.
+
+### `render.yaml` (complete)
 
 ```yaml
 services:
@@ -424,242 +760,166 @@ services:
         value: "1"
 ```
 
-**Build phase** installs all dependencies and then runs `train_model.py`, which downloads the dataset, trains the model, and writes `insurance_model.pkl` and `model_metadata.json` to the deployment filesystem.
+### `requirements.txt` (complete, pinned)
 
-**Start phase** launches Gunicorn with a single worker and two threads — the optimal configuration for Render's free tier 512 MB RAM ceiling. Two threads allow concurrent requests without the memory overhead of a second worker process.
-
-**Startup validation** runs before Gunicorn accepts connections. If the model or metadata fails validation, the process exits and Render marks the deployment as failed — preventing a broken build from reaching users.
-
-### Deployment Steps
-
-1. Push the repository to GitHub (include `insurance_base.csv` to avoid a network dependency at build time, or rely on the download)
-2. Create a new **Web Service** on [render.com](https://render.com) and connect the repository
-3. Render auto-detects `render.yaml` — no manual environment configuration required
-4. Monitor the build log; the training run logs MAE, RMSE, R², and CV scores
-5. Once healthy, the `/health` endpoint confirms readiness
-
-### Resource Profile (Free Tier)
-
-| Resource | Value |
-|---|---|
-| RAM | ~210–250 MB (model ~1.3 MB, Python runtime ~150 MB) |
-| Workers | 1 |
-| Threads | 2 |
-| Cold start | ~5–8 s |
-| Model training at build | ~1 s |
+```
+flask==3.0.0
+scikit-learn==1.6.1
+numpy==1.26.4
+joblib==1.3.2
+gunicorn==21.2.0
+```
 
 ---
 
-## API Documentation
+## Monitoring
 
-### `POST /predict`
-
-Accepts a JSON body with ten fields. Returns a prediction, risk profile, and what-if scenarios.
-
-#### Request
-
-```http
-POST /predict
-Content-Type: application/json
-```
-
-```json
-{
-  "age": 35,
-  "sex": 1,
-  "bmi": 28.5,
-  "children": 2,
-  "smoker": 0,
-  "past_consultations": 4,
-  "num_of_steps": 7500,
-  "past_hospitalizations": 1,
-  "annual_salary": 75000,
-  "region": 2
-}
-```
-
-| Field | Type | Range | Notes |
+| Endpoint | Method | Purpose | Key Fields |
 |---|---|---|---|
-| `age` | float | 0–120 | Patient age in years |
-| `sex` | int | 0 or 1 | 0 = female, 1 = male |
-| `bmi` | float | 0–80 | Body mass index |
-| `children` | int | 0–10 | Number of dependants |
-| `smoker` | int | 0 or 1 | 0 = non-smoker, 1 = smoker |
-| `past_consultations` | int | 0–20 | Outpatient visits in past year |
-| `num_of_steps` | float | 0–20,000 | Average daily step count |
-| `past_hospitalizations` | int | 0–10 | Number of prior hospital admissions |
-| `annual_salary` | float | 20,000–300,000 | Annual income in USD |
-| `region` | int | 0–3 | 0=northeast, 1=northwest, 2=southeast, 3=southwest |
+| `/health` | GET | Liveness probe for uptime monitoring | `status`, `model_loaded`, `version` |
+| `/system-status` | GET | Full diagnostics — metrics, memory, uptime | `uptime_seconds`, `memory_mb`, `model_size_kb`, full `model_metadata` |
 
-#### Response — Success (200)
+Both endpoints return `200 OK` when the server is healthy. The `/system-status` endpoint optionally reports memory via `psutil` if installed; falls back to `null` if not.
 
-```json
-{
-  "prediction": 12847.32,
-  "risk": {
-    "level": "Medium Risk",
-    "color": "medium",
-    "icon": "🟡",
-    "score": 30,
-    "advice": "Moderate risk profile. Regular checkups and a healthy BMI can help reduce costs."
-  },
-  "whatif": {
-    "nonsmoker": null,
-    "healthy_bmi": 10234.18,
-    "age_diff": 9821.44,
-    "current_age": 35,
-    "current_bmi": 28.5,
-    "is_smoker": false
-  }
-}
-```
-
-#### Response — Validation Error (400)
-
-```json
-{
-  "error": "Missing required fields: smoker, region"
-}
-```
-
-```json
-{
-  "error": "Validation error: BMI must be 0–80"
-}
-```
-
-### `GET /health`
-
-Returns `200 OK` when the server is running and the model is loaded.
-
-### `GET /system-status`
-
-Returns full runtime diagnostics including uptime, memory, model metrics, and top features. See [Health Monitoring](#health-monitoring) for a full response example.
+Suggested monitoring integration: configure an uptime monitor (e.g. UptimeRobot, BetterStack) against `/health`. Configure a richer dashboard against `/system-status` for R², MAE, and uptime visibility.
 
 ---
 
-## UI Showcase
+## Testing
 
-InsureIQ's frontend is a single-page application built with vanilla HTML, CSS, and JavaScript — no frontend framework required.
+InsureIQ does not ship a formal test suite in v2.2, but the codebase includes several built-in verification mechanisms:
 
-### Design System
-
-The interface uses a **deep matte-blue dark theme** built on CSS custom properties. The primary background sits at near-black `#07111f`, layered with subtle radial glows and a fine dot-grid texture. Accent colours are drawn from a blue ramp (`#2d7ff9` primary, `#4da3ff` highlight), with semantic overrides for success (green), warning (amber), and danger (red) states — used exclusively for the risk badge.
-
-### Multi-Step Form
-
-The input form is divided into four clearly labelled steps, navigated by Previous / Next buttons and a progress bar that animates from 25% to 100% as the user advances:
-
-- **Step 1 — Personal Profile**: Age, sex, number of children, smoking status
-- **Step 2 — Physical Health**: BMI (with live slider), past consultations, daily steps
-- **Step 3 — Medical History**: Past hospitalisations
-- **Step 4 — Financial Profile**: Annual salary, region
-
-All numeric inputs use range sliders with real-time value display. Toggle buttons replace dropdowns for binary fields (sex, smoker, region). The form preserves values on back-navigation.
-
-### Results Dashboard
-
-After prediction the page scrolls to a results panel containing:
-
-- **Premium figure** — large, formatted dollar amount
-- **Risk badge** — colour-coded Low / Medium / High with an emoji indicator
-- **What-if insight cards** — up to three cards showing projected savings from smoking cessation, reaching BMI < 25, or comparing to a ten-years-younger baseline
-- **Personalised advice** — a plain-English recommendation based on the risk profile
-- **Recalculate button** — returns to the form without a page reload
-
-### Screenshots
-
-> *Add screenshots here after deployment.*
->
-> Suggested captures:
-> - Step 1 form (desktop)
-> - Step 3 form with sliders active
-> - Results panel with High Risk badge and what-if cards
-> - Mobile view of the multi-step form
-
----
-
-## Challenges Faced
-
-### Synthetic Feature Design Without Leakage
-
-Extending a 7-column real dataset to 10 columns required generating synthetic features that are statistically plausible but causally independent of the target. The first attempt introduced `Claim_Amount` and `Hospital_expenditure`, both of which were inadvertently derived from `charges`. Identifying this required tracing every feature's generation code back to its source variables — a process that revealed the leakage only when the dependency chain was written out explicitly.
-
-The lesson: synthetic feature generation must be validated not just for statistical realism but for causal independence from the target. Correlation checks between generated features and `y` should be a mandatory step in any pipeline that augments real data.
-
-### Honest Metrics vs. Impressive Metrics
-
-The corrected model's R² of 0.86 is lower than the leaked model's 0.93. There was a temptation to present the higher number, particularly for a portfolio context. The decision to document the leakage, fix it, and ship the lower-but-honest metrics was deliberate — it demonstrates exactly the kind of engineering judgement that separates a careful practitioner from one who optimises for appearances.
-
-### Render Free Tier Constraints
-
-The free tier's 512 MB RAM limit required careful memory management. A two-worker Gunicorn configuration would double the resident memory of the loaded model and Python runtime, exceeding the cap. Single-worker, two-thread mode was the correct trade-off: concurrent request handling is preserved without a second copy of the model in memory.
-
-### Startup Reliability
-
-Flask's default behaviour is to serve requests even when application-level resources are in a bad state (missing files, schema mismatches). Implementing fail-fast startup — calling `sys.exit(1)` before the server binds if any validation fails — required overriding this default. The tradeoff is zero tolerance for misconfigured deploys, which is the correct behaviour for a production service.
-
----
-
-## Lessons Learned
-
-### Data Leakage Is Easy to Introduce and Hard to Spot
-
-Synthetic feature generation is a legitimate technique for extending small datasets. But any generated feature that references the target variable — even indirectly — introduces leakage. The corrected detection methodology (tracing generation code line by line, then computing correlation with `y`) is now a standard step in this project's training pipeline.
-
-### Production ML Requires More Than a Trained Model
-
-The model is one component. Startup validation, schema versioning, health endpoints, input sanitisation, security headers, and a deployment configuration are all required before a model can be called production-ready. This project implements all of them.
-
-### Feature Importance Is a Post-Hoc Signal
-
-A feature importance of 29.7% for `Claim_Amount` in v2.1 looked like the model had correctly identified a strong predictor. It was actually a leakage signal — the model was exploiting a shortcut, not learning a relationship. Feature importance alone does not validate a feature; its generation logic must be audited independently.
-
-### Fail-Fast Is Friendlier Than Graceful Degradation
-
-A server that starts in a degraded state and returns wrong predictions is worse than one that refuses to start at all. Fail-fast startup with explicit error messages makes misconfiguration failures loud, immediate, and actionable rather than silent and insidious.
-
-### MLOps Basics Pay Off Immediately
-
-Storing `model_metadata.json` alongside the pkl — with the feature list, training timestamp, and metrics — made the schema mismatch check trivially implementable. The thirty lines of validation code have already caught a real misconfiguration (the v2.1 → v2.2 feature schema change) exactly as designed.
-
----
-
-## Future Improvements
-
-- **Real extended features**: Replace synthetic `past_consultations`, `num_of_steps`, `NUmber_of_past_hospitalizations`, and `Anual_Salary` with data from a real healthcare dataset to further strengthen model validity
-- **Hyperparameter tuning**: Add a `GridSearchCV` or `Optuna` sweep over the GBR parameter space with the clean 10-feature set
-- **SHAP explanations**: Integrate SHAP values into the `/predict` response so users receive a per-feature contribution breakdown alongside the premium figure
-- **Model versioning**: Add a model registry (MLflow or DVC) to track experiment history and enable rollback
-- **CI/CD pipeline**: GitHub Actions workflow to run the training pipeline and unit tests on every push, blocking deploys on schema regression
-- **Rate limiting**: Add `flask-limiter` to the `/predict` endpoint to prevent abuse on the public deployment
-- **Persistent logging**: Route structured prediction logs to a time-series store (e.g. Logtail, Datadog) for drift monitoring over time
-
----
-
-## Technologies Used
-
-| Layer | Technology | Version |
+| Mechanism | Where | What it checks |
 |---|---|---|
-| Language | Python | 3.11 |
-| Web framework | Flask | 3.0.0 |
-| ML library | Scikit-Learn | 1.6.1 |
-| Numerical computing | NumPy | 1.26.4 |
-| Model serialisation | Joblib | 1.3.2 |
-| WSGI server | Gunicorn | 21.2.0 |
-| Frontend | HTML5 / CSS3 / Vanilla JS | — |
-| Deployment | Render | Free tier |
+| Model smoke-test | `load_model()` at startup | `pipeline.predict(zeros)` returns shape `(1,)` |
+| Metadata schema guard | `load_metadata()` at startup | `features` list matches `FEATURE_ORDER` exactly |
+| Hold-out evaluation | `train_and_evaluate()` in training | MAE, RMSE, R² on 268 unseen records |
+| 5-fold cross-validation | `train_and_evaluate()` in training | CV R² mean and std over full 1,338 records |
+| Training log | Printed to stdout during `python train_model.py` | Confirms dataset size, split sizes, metrics, top features |
+| `/health` endpoint | Runtime | Server process + model availability check |
+| `/system-status` endpoint | Runtime | Full metric and memory verification |
+
+**Recommended additions (future):** `pytest` unit tests covering `sanitise_float()`, `get_risk_profile()`, `predict_premium()`, and each validation branch in `predict()`.
+
+---
+
+## Performance Optimisations
+
+| Optimisation | Implementation | Impact |
+|---|---|---|
+| Module-level model loading | `model = load_model()` runs once at import — not per-request | Zero per-request deserialisation overhead |
+| Single-worker / two-thread Gunicorn | `--workers 1 --threads 2` | Concurrent requests without doubling the ~150 MB model-in-memory footprint |
+| `np.random.default_rng(seed=42)` | Modern NumPy RNG for feature generation | Reproducible and faster than legacy `np.random.seed()` |
+| Cache-first dataset loading | `insurance_base.csv` checked before download | Eliminates network call on repeated local or build runs |
+| `max(0.0, round(pred, 2))` in `predict_premium()` | Floor at zero, round to cents | Guards against negative predictions from extrapolated inputs |
+| `JSON_SORT_KEYS = False` | Flask app config | Preserves field ordering in responses without serialisation overhead |
+| Gunicorn `--timeout 120` | `render.yaml` | Accommodates Render cold-start latency without premature worker kill |
+
+---
+
+## Technical Highlights
+
+**Fail-fast startup architecture.** Most Flask applications start serving requests even when resources are in a bad state. InsureIQ runs both `load_model()` and `load_metadata()` synchronously at module import — before Flask initialises its routing, before Gunicorn accepts connections. A failed smoke-test or feature schema mismatch calls `sys.exit(1)` immediately. The deployment fails loudly and correctly, never silently.
+
+**Feature schema versioning between artefact and API.** The `FEATURE_ORDER` list appears in both `train_model.py` (which writes it to `model_metadata.json`) and `app.py` (which reads it back and asserts equality at startup). This creates a contract: if either file is modified independently, the mismatch is caught before any user request reaches the model.
+
+**Formal leakage audit with documented before/after metrics.** The v2.1 → v2.2 transition includes full documentation of the leakage discovery (generation code analysis, Pearson r ≈ 0.85, 29.7% importance), the fix (permanent removal from all five layers), and the honest metric impact (R² dropped from 0.93 to 0.86). This is uncommon in portfolio projects.
+
+**What-if simulation as first-class API feature.** Three parallel `predict_premium()` calls — non-smoker, healthy BMI, age minus 10 — are computed per request and returned in the same response. Each is a full pipeline prediction, not a heuristic delta.
+
+**Risk scoring from multiple clinical signals.** `get_risk_profile()` computes a weighted score from four independent signals (smoker status, BMI tier, age tier, dollar threshold) and returns a structured dict with level, colour, icon, score, and personalised advice. The score is deterministic and auditable.
+
+---
+
+## Challenges Solved
+
+**Synthetic feature generation without target leakage.** Extending a 7-column dataset to 10 columns required generating features that are statistically plausible but causally independent of `charges`. The first attempt (`Claim_Amount`, `Hospital_expenditure`) failed because both referenced `charges` in their generation formulas. Detecting this required tracing the dependency chain explicitly and computing Pearson correlation with the target — a formal audit process.
+
+**Honest metrics vs. impressive metrics.** The corrected v2.2 model reports R² = 0.86 instead of 0.93. The lower number is the right engineering choice: a model that exploits a shortcut degrades silently in production when the leaking feature is absent or misreported. Documenting this trade-off explicitly is a more valuable portfolio signal than presenting the higher number without explanation.
+
+**Render free-tier memory constraints.** 512 MB RAM limit with a Python + sklearn runtime (~150 MB) and a ~1.3 MB model left limited headroom. Two-worker Gunicorn would double the model's memory footprint. Single-worker, two-thread configuration preserves concurrent request handling within the memory ceiling.
+
+**Preventing degraded-state serving.** Flask's default behaviour does not prevent request handling when application resources fail to load. Implementing `sys.exit(1)` at import time — before the server binds — required overriding the framework default. The result is zero tolerance for misconfigured deploys.
+
+---
+
+## Future Enhancements
+
+| Priority | Enhancement | Rationale |
+|---|---|---|
+| High | Replace synthetic features with real healthcare data | Eliminates the need for medically plausible but simulated values |
+| High | Add `pytest` test suite | Covers `sanitise_float`, `get_risk_profile`, all validation branches, startup guards |
+| High | GitHub Actions CI/CD | Run training + tests on every push; fail build on feature schema regression |
+| Medium | SHAP explanations in `/predict` response | Per-feature contribution breakdown alongside the premium figure |
+| Medium | `GridSearchCV` / Optuna hyperparameter sweep | Systematic search over the 10-feature clean dataset |
+| Medium | `flask-limiter` rate limiting on `/predict` | Protect the public deployment from abuse |
+| Medium | MLflow / DVC model registry | Track experiment history, enable rollback to prior model versions |
+| Low | Persistent prediction logging | Route structured logs to Logtail / Datadog for distribution drift monitoring |
+| Low | SHAP waterfall chart in UI | Visual breakdown of which features drove a specific prediction |
+| Low | `psutil` in `requirements.txt` | Ensures `/system-status` always returns `memory_mb` (currently optional) |
+
+---
+
+## Frequently Asked Questions
+
+**Why does the model have features with unusual capitalisation (`NUmber_of_past_hospitalizations`, `Anual_Salary`)?**
+These names originated in the synthetic feature generation code and are preserved exactly across `train_model.py`, `model_metadata.json`, and `app.py` as part of the feature schema contract. The startup guard compares these names as strings; any capitalisation change would break the guard.
+
+**Why is the v2.2 R² lower than v2.1?**
+The v2.1 model included `Claim_Amount` — a synthetic feature computed as `charges × uniform(0.05, 0.55) × noise`. Its Pearson r with the target was ~0.85, giving the model a near-direct path to the answer. The v2.2 metrics are lower because they reflect what the model genuinely learned from age, BMI, and smoking status alone.
+
+**Why 1 Gunicorn worker instead of 2 or more?**
+Render's free tier provides 512 MB RAM. The Python runtime plus the loaded sklearn model occupies ~150–200 MB. A second worker would load a second copy of the model, likely exceeding the memory ceiling and causing OOM kills. Two threads on a single worker provides concurrency without the memory cost.
+
+**Can I add more features?**
+Yes, but you must: (1) add generation logic in `train_model.py`, (2) update `FEATURE_ORDER` in both `train_model.py` and `app.py`, (3) add the field to `REQUIRED_FIELDS` in `app.py`, (4) update the form in `templates/index.html`, (5) retrain. The startup guard will catch any mismatch between (2) and the stored metadata.
+
+**Why is the dataset downloaded at Render build time rather than committed?**
+`insurance_base.csv` (the 1,338-record base dataset) is committed to the repository, so Render builds use the cached version via `--offline`-equivalent logic in `train_model.py`. If the file is not present, the training script downloads it from the original GitHub source. This gives offline reproducibility while keeping the option to fetch fresh data.
+
+**What happens if someone sends malformed JSON to `/predict`?**
+`request.get_json(silent=True)` returns `None` for non-JSON bodies. The route immediately returns `{"error": "Request body must be JSON."}` with status 400. The model is never called.
+
+**Is there any authentication on the API?**
+No. InsureIQ is a public prediction service with no user data stored. Input validation prevents abuse at the model level; rate limiting is listed as a future enhancement.
+
+---
+
+## Repository Audit Report
+
+| Dimension | Value |
+|---|---|
+| **Total files analysed** | 10 (app.py, train_model.py, model_metadata.json, insurance_model.pkl, insurance_base.csv, requirements.txt, render.yaml, .python-version, .gitignore, templates/index.html) |
+| **Languages detected** | Python (40.5%), HTML/CSS/JS (59.5%) |
+| **Python version** | 3.11 (pinned in `.python-version`) |
+| **Frameworks** | Flask 3.0.0 (web), scikit-learn 1.6.1 (ML), Gunicorn 21.2.0 (WSGI) |
+| **ML algorithm** | GradientBoostingRegressor inside sklearn Pipeline with StandardScaler |
+| **ML libraries** | scikit-learn 1.6.1, NumPy 1.26.4, joblib 1.3.2 |
+| **Frontend technologies** | Vanilla HTML5, CSS3 custom properties, vanilla JavaScript — no framework or build step |
+| **Deployment platform** | Render (free tier) — `render.yaml` zero-config |
+| **Security mechanisms** | CSP, X-Frame-Options, nosniff, X-XSS-Protection, Referrer-Policy, three-layer input validation, fail-fast startup guards |
+| **Monitoring** | `/health` (liveness), `/system-status` (full diagnostics with metrics + memory) |
+
+### Scores
+
+| Category | Score | Reasoning |
+|---|---|---|
+| **Production Readiness** | **8 / 10** | Fail-fast startup, security headers, structured error handlers, health endpoints, Render deployment config, and Gunicorn configuration are all present and correct. Deductions: no formal test suite, no rate limiting, no CI/CD pipeline, `psutil` is optional rather than pinned. |
+| **ML Architecture** | **8.5 / 10** | Sklearn Pipeline (scaler + GBR) is the correct abstraction. Hyperparameters are justified. Stratified split on smoker column. 5-fold CV. Feature importances exported. Metadata versioning with startup schema guard. Formal leakage audit with honest before/after metrics. Deductions: no hyperparameter search, no SHAP explainability layer, synthetic features rather than real data. |
+| **Documentation** | **7 / 10** | The codebase is thoroughly commented. Every function in `app.py` and `train_model.py` has a clear docstring. `model_metadata.json` is self-documenting. The existing README is detailed. Deductions: no formal API documentation (e.g. OpenAPI), no inline type hints throughout, no contribution guide. |
+| **Maintainability** | **8 / 10** | Clean separation of concerns: training (`train_model.py`), serving (`app.py`), frontend (`templates/`), deployment (`render.yaml`). Feature schema contract between training and serving is explicit and machine-checked at startup. Constants are centralised. All five dependencies are pinned. Deductions: no test suite makes refactoring riskier; feature names with inconsistent casing (`NUmber_of_past_hospitalizations`) are a technical debt item. |
 
 ---
 
 ## Developer
 
-**Arun VK**
+**Arun VK** — ML engineer and full-stack developer building production-quality ML systems end-to-end.
 
-Machine learning engineer and full-stack developer with a focus on production-quality ML systems.
-
-- **Email**: [arunvk207@gmail.com](mailto:arunvk207@gmail.com)
-- **LinkedIn**: [linkedin.com/in/arunvk2004](https://www.linkedin.com/in/arunvk2004/)
+| | |
+|---|---|
+| **Email** | [arunvk207@gmail.com](mailto:arunvk207@gmail.com) |
+| **LinkedIn** | [linkedin.com/in/arunvk2004](https://www.linkedin.com/in/arunvk2004/) |
+| **GitHub** | [github.com/ArunVijaykumarcsds](https://github.com/ArunVijaykumarcsds) |
 
 ---
 
@@ -693,4 +953,8 @@ SOFTWARE.
 
 ---
 
-<p align="center">Built with precision by <a href="https://www.linkedin.com/in/arunvk2004/">Arun VK</a></p>
+<div align="center">
+
+Built with precision by [Arun VK](https://www.linkedin.com/in/arunvk2004/) · InsureIQ v2.2.0
+
+</div>
