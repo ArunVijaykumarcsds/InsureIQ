@@ -1,0 +1,116 @@
+{
+  "version": "2.2.0",
+  "trained_at": "2026-06-06T07:11:48.389393+00:00",
+  "dataset_source": "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv",
+  "dataset_size": 1338,
+  "features": [
+    "age",
+    "sex",
+    "bmi",
+    "children",
+    "smoker",
+    "past_consultations",
+    "num_of_steps",
+    "NUmber_of_past_hospitalizations",
+    "Anual_Salary",
+    "region"
+  ],
+  "feature_count": 10,
+  "target": "annual_insurance_charges_usd",
+  "algorithm": "GradientBoostingRegressor (sklearn Pipeline + StandardScaler)",
+  "metrics": {
+    "mae": 2921.58,
+    "rmse": 4588.44,
+    "r2": 0.8573,
+    "cv_r2_mean": 0.8402,
+    "cv_r2_std": 0.0325,
+    "train_size": 1070,
+    "test_size": 268,
+    "feature_importances": {
+      "age": 0.1025,
+      "sex": 0.0027,
+      "bmi": 0.1684,
+      "children": 0.0116,
+      "smoker": 0.5903,
+      "past_consultations": 0.02,
+      "num_of_steps": 0.0608,
+      "NUmber_of_past_hospitalizations": 0.0105,
+      "Anual_Salary": 0.0257,
+      "region": 0.0075
+    },
+    "training_seconds": 0.8
+  },
+  "model_path": "/home/claude/insureiq_v2_2/insurance_model.pkl",
+  "feature_schema": {
+    "age": {
+      "type": "float",
+      "range": [
+        18,
+        64
+      ]
+    },
+    "sex": {
+      "type": "binary",
+      "values": [
+        0,
+        1
+      ]
+    },
+    "bmi": {
+      "type": "float",
+      "range": [
+        15.0,
+        55.0
+      ]
+    },
+    "children": {
+      "type": "int",
+      "range": [
+        0,
+        5
+      ]
+    },
+    "smoker": {
+      "type": "binary",
+      "values": [
+        0,
+        1
+      ]
+    },
+    "past_consultations": {
+      "type": "int",
+      "range": [
+        0,
+        20
+      ]
+    },
+    "num_of_steps": {
+      "type": "float",
+      "range": [
+        0,
+        20000
+      ]
+    },
+    "NUmber_of_past_hospitalizations": {
+      "type": "int",
+      "range": [
+        0,
+        10
+      ]
+    },
+    "Anual_Salary": {
+      "type": "float",
+      "range": [
+        20000,
+        300000
+      ]
+    },
+    "region": {
+      "type": "int",
+      "range": [
+        0,
+        3
+      ]
+    }
+  }
+}

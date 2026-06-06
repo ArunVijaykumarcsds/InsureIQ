@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsureIQ — AI Insurance Premium Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── DESIGN TOKENS ───────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0A1224;
+      --bg2:         #101B33;
+      --card:        #16233F;
+      --card2:       #1A2A4A;
+      --accent:      #2D7FF9;
+      --accent-hi:   #4DA3FF;
+      --accent-glow: rgba(45,127,249,.18);
+      --text:        #EAF2FF;
+      --muted:       #AAB7D1;
+      --muted2:      #6A7B9A;
+      --success:     #27C26C;
+      --warn:        #F5A623;
+      --danger:      #E84545;
+      --border:      rgba(255,255,255,.07);
+      --border-hi:   rgba(77,163,255,.25);
+      --r:           16px;
+      --r-sm:        10px;
+      --shadow:      0 8px 32px rgba(0,0,0,.35);
+      --shadow-lg:   0 20px 60px rgba(0,0,0,.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── BACKGROUND ATMOSPHERE ──────────────────────────────────────────── */
+    .atm {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .atm-orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: .55;
+    }
+    .atm-orb-1 {
+      width: 700px; height: 500px;
+      top: -180px; left: 50%; transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(45,127,249,.18), transparent 70%);
+    }
+    .atm-orb-2 {
+      width: 400px; height: 400px;
+      bottom: 10%; right: -100px;
+      background: radial-gradient(ellipse, rgba(77,163,255,.1), transparent 70%);
+    }
+    .atm-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(77,163,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(77,163,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* ─── LAYOUT ─────────────────────────────────────────────────────────── */
+    .page { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 0 20px 100px; }
+
+    /* ─── HEADER ─────────────────────────────────────────────────────────── */
+    .header {
+      padding: 64px 0 52px;
+      text-align: center;
+      animation: fadeDown .7s cubic-bezier(.22,1,.36,1) both;
+    }
+    .brand-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--accent-hi);
+      background: rgba(45,127,249,.1); border: 1px solid rgba(77,163,255,.2);
+      padding: 6px 16px 6px 10px; border-radius: 100px; margin-bottom: 28px;
+    }
+    .brand-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 8px var(--accent); animation: pulse 2s ease infinite;
+    }
+    .header h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2.6rem, 6vw, 4rem);
+      font-weight: 400; line-height: 1.08; letter-spacing: -.01em;
+      color: var(--text);
+    }
+    .header h1 em {
+      font-style: italic; color: var(--accent-hi);
+    }
+    .header-sub {
+      margin-top: 16px;
+      font-size: 1rem; color: var(--muted); line-height: 1.65;
+      max-width: 440px; margin-inline: auto;
+    }
+    .trust-row {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 28px;
+    }
+    .trust-pill {
+      font-size: 11.5px; font-weight: 500;
+      padding: 5px 13px; border-radius: 100px;
+      background: rgba(255,255,255,.04); border: 1px solid var(--border);
+      color: var(--muted); letter-spacing: .02em;
+    }
+
+    /* ─── CARD ───────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* ─── STEP TABS ──────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,.15);
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 1; min-width: 90px; display: flex; flex-direction: column;
+      align-items: center; gap: 5px; padding: 18px 12px;
+      font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+      color: var(--muted2); cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all .2s ease;
+      user-select: none; white-space: nowrap;
+    }
+    .tab:hover { color: var(--muted); }
+    .tab.active { color: var(--accent-hi); border-bottom-color: var(--accent); }
+    .tab-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      background: var(--card2); border: 1.5px solid var(--border);
+      transition: all .2s;
+    }
+    .tab.active .tab-num {
+      background: var(--accent); border-color: var(--accent);
+      color: #fff; box-shadow: 0 0 12px rgba(45,127,249,.4);
+    }
+    .tab.done .tab-num {
+      background: rgba(39,194,108,.15); border-color: var(--success);
+      color: var(--success);
+    }
+    .tab.done .tab-num::after { content: '✓'; }
+
+    /* ─── FORM BODY ──────────────────────────────────────────────────────── */
+    .form-body { padding: 32px 32px 28px; }
+
+    .step { display: none; animation: fadeIn .25s ease both; }
+    .step.active { display: block; }
+
+    .step-heading {
+      font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 22px;
+    }
+    .step-heading span { color: var(--muted2); }
+
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 560px) { .field-grid { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px; font-weight: 600; letter-spacing: .04em;
+      color: var(--muted); text-transform: uppercase;
+    }
+
+    input[type="number"], select {
+      width: 100%; background: rgba(0,0,0,.25);
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      color: var(--text); font-family: inherit; font-size: .95rem; font-weight: 500;
+      padding: 11px 14px; transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none; outline: none;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    input[type="number"]::placeholder { color: var(--muted2); }
+    select option { background: var(--bg2); color: var(--text); }
+
+    /* toggle group */
+    .toggle-group { display: flex; gap: 8px; }
+    .toggle-btn {
+      flex: 1; padding: 10px 8px; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border); background: rgba(0,0,0,.2);
+      color: var(--muted); font-family: inherit; font-size: .88rem; font-weight: 600;
+      cursor: pointer; transition: all .18s ease; text-align: center;
+    }
+    .toggle-btn:hover { border-color: var(--border-hi); color: var(--text); }
+    .toggle-btn.selected {
+      background: rgba(45,127,249,.15); border-color: var(--accent);
+      color: var(--accent-hi); box-shadow: 0 0 12px rgba(45,127,249,.15);
+    }
+
+    /* range slider */
+    .range-wrap { display: flex; flex-direction: column; gap: 5px; }
+    .range-val-row { display: flex; justify-content: space-between; align-items: center; }
+    .range-val {
+      font-size: 1.05rem; font-weight: 700; color: var(--text);
+    }
+    .range-unit { font-size: 11px; color: var(--muted2); }
+    input[type="range"] {
+      -webkit-appearance: none; width: 100%; height: 5px;
+      border-radius: 3px; outline: none; cursor: pointer;
+      background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct, 50%), rgba(255,255,255,.08) var(--pct, 50%));
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+      background: var(--accent-hi); border: 2px solid var(--bg);
+      box-shadow: 0 0 8px rgba(45,127,249,.5); cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--bg);
+      background: var(--accent-hi); box-shadow: 0 0 8px rgba(45,127,249,.5);
+    }
+
+    /* hint */
+    .hint { font-size: 11.5px; color: var(--muted2); line-height: 1.4; }
+
+    /* ─── NAV BUTTONS ────────────────────────────────────────────────────── */
+    .nav-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 32px 28px; border-top: 1px solid var(--border);
+    }
+    .btn {
+      font-family: inherit; font-size: .92rem; font-weight: 700;
+      padding: 11px 26px; border-radius: 100px; border: none;
+      cursor: pointer; transition: all .2s ease; letter-spacing: .02em;
+    }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--border-hi); color: var(--text); }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 4px 18px rgba(45,127,249,.35);
+    }
+    .btn-primary:hover { background: var(--accent-hi); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(45,127,249,.45); }
+    .btn-primary:disabled {
+      opacity: .5; cursor: not-allowed; transform: none; box-shadow: none;
+    }
+    .btn-predict {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hi));
+      color: #fff; padding: 13px 36px;
+      box-shadow: 0 4px 20px rgba(45,127,249,.4);
+    }
+    .btn-predict:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(45,127,249,.5); }
+
+    /* ─── LOADING ────────────────────────────────────────────────────────── */
+    .loader-wrap {
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 32px; gap: 20px;
+      animation: fadeIn .3s ease both;
+    }
+    .loader-wrap.show { display: flex; }
+    .spinner {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 3px solid rgba(77,163,255,.15);
+      border-top-color: var(--accent-hi);
+      animation: spin .8s linear infinite;
+    }
+    .loader-text { font-size: .95rem; color: var(--muted); }
+    .loader-dots::after {
+      content: ''; animation: dots 1.2s steps(4, end) infinite;
+    }
+
+    /* ─── RESULT PANEL ───────────────────────────────────────────────────── */
+    .result-panel {
+      display: none; padding: 36px 32px 32px;
+      animation: fadeUp .5s cubic-bezier(.22,1,.36,1) both;
+    }
+    .result-panel.show { display: block; }
+
+    .result-hero {
+      text-align: center; padding: 32px 24px;
+      background: linear-gradient(145deg, rgba(45,127,249,.08), rgba(16,27,51,.6));
+      border: 1px solid rgba(45,127,249,.2); border-radius: var(--r);
+      margin-bottom: 28px; position: relative; overflow: hidden;
+    }
+    .result-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(45,127,249,.12), transparent 70%);
+      pointer-events: none;
+    }
+    .result-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+    }
+    .result-amount {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      font-weight: 400; color: var(--text); line-height: 1;
+    }
+    .result-amount-period { font-size: 1rem; color: var(--muted); margin-top: 5px; }
+
+    /* risk badge */
+    .risk-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 18px; border-radius: 100px; margin-top: 18px;
+      font-size: .85rem; font-weight: 700;
+    }
+    .risk-badge.low    { background: rgba(39,194,108,.1);  border: 1px solid rgba(39,194,108,.3);  color: var(--success); }
+    .risk-badge.medium { background: rgba(245,166,35,.1);  border: 1px solid rgba(245,166,35,.3);  color: var(--warn); }
+    .risk-badge.high   { background: rgba(232,69,69,.1);   border: 1px solid rgba(232,69,69,.3);   color: var(--danger); }
+
+    /* insight cards */
+    .insights { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+    @media (max-width: 560px) { .insights { grid-template-columns: 1fr; } }
+
+    .insight-card {
+      background: rgba(0,0,0,.2); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 16px 18px;
+    }
+    .insight-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted2); margin-bottom: 6px;
+    }
+    .insight-val {
+      font-size: 1.15rem; font-weight: 700; color: var(--text);
+    }
+    .insight-save { font-size: .8rem; color: var(--success); margin-top: 3px; }
+
+    /* advice */
+    .advice-box {
+      background: rgba(45,127,249,.06); border: 1px solid rgba(45,127,249,.15);
+      border-radius: var(--r-sm); padding: 16px 20px;
+      font-size: .9rem; color: var(--muted); line-height: 1.6;
+    }
+
+    /* ─── ERROR ──────────────────────────────────────────────────────────── */
+    .error-panel {
+      display: none; padding: 28px 32px;
+      background: rgba(232,69,69,.06); border-top: 1px solid rgba(232,69,69,.15);
+      animation: fadeIn .25s ease both;
+    }
+    .error-panel.show { display: block; }
+    .error-msg { font-size: .9rem; color: #f08080; line-height: 1.5; }
+    .error-retry { margin-top: 12px; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────────────── */
+    .footer {
+      text-align: center; padding-top: 40px;
+      font-size: 11.5px; color: var(--muted2);
+    }
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--text); }
+
+    /* ─── ANIMATIONS ─────────────────────────────────────────────────────── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+    @keyframes dots {
+      0%  { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+    }
+
+    /* stagger card */
+    .card { animation: fadeUp .6s .15s cubic-bezier(.22,1,.36,1) both; }
+
+    /* ─── PROGRESS BAR ───────────────────────────────────────────────────── */
+    .progress-bar-wrap { height: 3px; background: rgba(255,255,255,.05); }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+      transition: width .4s ease; box-shadow: 0 0 8px rgba(45,127,249,.5);
+    }
+  </style>
+</head>
+<body>
+
+<!-- atmosphere -->
+<div class="atm" aria-hidden="true">
+  <div class="atm-grid"></div>
+  <div class="atm-orb atm-orb-1"></div>
+  <div class="atm-orb atm-orb-2"></div>
+</div>
+
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="brand-chip"><span class="brand-dot"></span>InsureIQ · AI Predictor</div>
+    <h1>Your <em>personalised</em><br>insurance premium</h1>
+    <p class="header-sub">Answer a few questions about your health profile and we'll predict your annual insurance cost in seconds.</p>
+    <div class="trust-row">
+      <span class="trust-pill">🔒 Private &amp; Secure</span>
+      <span class="trust-pill">⚡ Instant Results</span>
+      <span class="trust-pill">🧠 ML-Powered</span>
+    </div>
+  </header>
+
+  <!-- Main Card -->
+  <div class="card" id="mainCard">
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar" style="width:25%"></div>
+    </div>
+
+    <!-- Tabs -->
+    <nav class="tabs" role="tablist" aria-label="Form steps">
+      <button class="tab active" data-step="1" role="tab" aria-selected="true">
+        <span class="tab-num">1</span>Personal
+      </button>
+      <button class="tab" data-step="2" role="tab" aria-selected="false">
+        <span class="tab-num">2</span>Health
+      </button>
+      <button class="tab" data-step="3" role="tab" aria-selected="false">
+        <span class="tab-num">3</span>History
+      </button>
+      <button class="tab" data-step="4" role="tab" aria-selected="false">
+        <span class="tab-num">4</span>Financial
+      </button>
+    </nav>
+
+    <!-- ── STEP 1: Personal ────────────────────────────────────────────── -->
+    <div class="form-body">
+      <div class="step active" id="step1">
+        <p class="step-heading">Step 1 <span>/ 4 — Personal Details</span></p>
+        <div class="field-grid">
+
+          <div class="field">
+            <label for="age">Age</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="ageVal">35</span>
+                <span class="range-unit">years old</span>
+              </div>
+              <input type="range" id="age" min="18" max="70" value="35"
+                     aria-label="Age" oninput="syncRange(this,'ageVal','')">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Biological Sex</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn selected" data-field="sex" data-val="0">Female</button>
+              <button type="button" class="toggle-btn" data-field="sex" data-val="1">Male</button>
+            </div>
+            <input type="hidden" id="sex" value="0">
+          </div>
+
+          <div class="field">
+            <label for="region">Region</label>
+            <select id="region" aria-label="Region">
+              <option value="0">Northeast</option>
+              <option value="1">Northwest</option>
+              <option value="2">Southeast</option>
+              <option value="3">Southwest</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="children">Dependants</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="childrenVal">0</span>
+                <span class="range-unit">children</span>
+              </div>
+              <input type="range" id="children" min="0" max="5" value="0"
+                     aria-label="Number of children" oninput="syncRange(this,'childrenVal','')">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Health ─────────────────────────────────────────────── -->
+      <div class="step" id="step2">
+        <p class="step-heading">Step 2 <span>/ 4 — Health Profile</span></p>
+        <div class="field-grid">
+
+          <div class="field">
+            <label for="bmi">Body Mass Index (BMI)</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="bmiVal">24.0</span>
+                <span class="range-unit">kg/m²</span>
+              </div>
+              <input type="range" id="bmi" min="16" max="45" step="0.1" value="24"
+                     aria-label="BMI" oninput="syncRange(this,'bmiVal','',1)">
+            </div>
+            <span class="hint">Under 18.5 = underweight · 18.5–24.9 = normal · 25–29.9 = overweight · 30+ = obese</span>
+          </div>
+
+          <div class="field">
+            <label>Smoker</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn selected" data-field="smoker" data-val="0">Non-smoker</button>
+              <button type="button" class="toggle-btn" data-field="smoker" data-val="1">Smoker</button>
+            </div>
+            <input type="hidden" id="smoker" value="0">
+          </div>
+
+          <div class="field">
+            <label for="num_of_steps">Daily Steps</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="stepsVal">7,500</span>
+                <span class="range-unit">steps/day</span>
+              </div>
+              <input type="range" id="num_of_steps" min="0" max="20000" step="100" value="7500"
+                     aria-label="Daily steps" oninput="syncRange(this,'stepsVal','',0,true)">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="past_consultations">Doctor Visits / Year</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="consultVal">3</span>
+                <span class="range-unit">visits</span>
+              </div>
+              <input type="range" id="past_consultations" min="0" max="20" value="3"
+                     aria-label="Past consultations" oninput="syncRange(this,'consultVal','')">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Medical History ────────────────────────────────────── -->
+      <div class="step" id="step3">
+        <p class="step-heading">Step 3 <span>/ 4 — Medical History</span></p>
+        <div class="field-grid">
+
+          <div class="field">
+            <label for="past_hospitalizations">Past Hospitalisations</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="hospVal">0</span>
+                <span class="range-unit">times</span>
+              </div>
+              <input type="range" id="past_hospitalizations" min="0" max="10" value="0"
+                     aria-label="Past hospitalisations" oninput="syncRange(this,'hospVal','')">
+            </div>
+          </div>
+
+
+
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Financial ──────────────────────────────────────────── -->
+      <div class="step" id="step4">
+        <p class="step-heading">Step 4 <span>/ 4 — Financial Profile</span></p>
+        <div class="field-grid">
+
+          <div class="field full">
+            <label for="annual_salary">Annual Salary</label>
+            <div class="range-wrap">
+              <div class="range-val-row">
+                <span class="range-val" id="salaryVal">$60,000</span>
+                <span class="range-unit">per year</span>
+              </div>
+              <input type="range" id="annual_salary" min="20000" max="300000" step="1000" value="60000"
+                     aria-label="Annual salary" oninput="syncRange(this,'salaryVal','$',0,true)">
+            </div>
+          </div>
+
+          <div class="field full">
+            <p class="hint" style="padding:14px 18px; background:rgba(45,127,249,.06); border:1px solid rgba(45,127,249,.12); border-radius:var(--r-sm); line-height:1.6;">
+              💡 Your salary is used for actuarial modelling only. This information is never stored or shared.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="nav-row">
+      <button class="btn btn-ghost" id="prevBtn" onclick="changeStep(-1)" style="visibility:hidden">← Back</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">Next →</button>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-wrap" id="loader">
+      <div class="spinner"></div>
+      <p class="loader-text">Calculating your premium<span class="loader-dots"></span></p>
+    </div>
+
+    <!-- Result -->
+    <div class="result-panel" id="resultPanel">
+      <div class="result-hero">
+        <div class="result-label">Estimated Annual Premium</div>
+        <div class="result-amount" id="resultAmount">$0</div>
+        <div class="result-amount-period">per year</div>
+        <div class="risk-badge" id="riskBadge"></div>
+      </div>
+
+      <div class="insights" id="insightCards"></div>
+
+      <div class="advice-box" id="adviceBox"></div>
+
+      <div style="margin-top:22px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="resetForm()">← Start Over</button>
+        <button class="btn btn-predict" onclick="recalculate()">Recalculate</button>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-panel" id="errorPanel">
+      <p class="error-msg" id="errorMsg"></p>
+      <div class="error-retry">
+        <button class="btn btn-ghost" onclick="hideError()">Dismiss</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    InsureIQ v{{ version }} · For illustrative purposes only · Not financial or medical advice
+  </footer>
+
+</div>
+
+<script>
+  /* ─── STATE ──────────────────────────────────────────────────────────────── */
+  let currentStep = 1;
+  const totalSteps = 4;
+
+  /* ─── RANGE SYNC ─────────────────────────────────────────────────────────── */
+  function syncRange(el, labelId, prefix='', decimals=0, comma=false) {
+    const v = parseFloat(el.value);
+    const label = document.getElementById(labelId);
+    let display = decimals > 0 ? v.toFixed(decimals) : Math.round(v);
+    if (comma) display = Number(display).toLocaleString();
+    label.textContent = prefix + display;
+
+    // Update gradient fill
+    const min = parseFloat(el.min), max = parseFloat(el.max);
+    const pct = ((v - min) / (max - min)) * 100;
+    el.style.setProperty('--pct', pct + '%');
+  }
+
+  // Initialise all range fills on load
+  document.querySelectorAll('input[type="range"]').forEach(r => {
+    const min = parseFloat(r.min), max = parseFloat(r.max), val = parseFloat(r.value);
+    const pct = ((val - min) / (max - min)) * 100;
+    r.style.setProperty('--pct', pct + '%');
+  });
+
+  /* ─── TOGGLE BUTTONS ─────────────────────────────────────────────────────── */
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const field = btn.dataset.field;
+      document.querySelectorAll(`.toggle-btn[data-field="${field}"]`).forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById(field).value = btn.dataset.val;
+    });
+  });
+
+  /* ─── STEP NAVIGATION ────────────────────────────────────────────────────── */
+  function changeStep(dir) {
+    const next = currentStep + dir;
+    if (next < 1 || next > totalSteps) return;
+
+    if (dir > 0) {
+      const tab = document.querySelector(`.tab[data-step="${currentStep}"]`);
+      tab.classList.remove('active');
+      tab.classList.add('done');
+    }
+
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    currentStep = next;
+    document.getElementById(`step${currentStep}`).classList.add('active');
+
+    // Update tabs
+    document.querySelectorAll('.tab').forEach(t => {
+      const s = parseInt(t.dataset.step);
+      if (s === currentStep) { t.classList.add('active'); t.classList.remove('done'); }
+      else if (s < currentStep) { t.classList.remove('active'); t.classList.add('done'); }
+      else { t.classList.remove('active', 'done'); }
+    });
+
+    // Update progress bar
+    document.getElementById('progressBar').style.width = (currentStep / totalSteps * 100) + '%';
+
+    // Update buttons
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    prevBtn.style.visibility = currentStep > 1 ? 'visible' : 'hidden';
+
+    if (currentStep === totalSteps) {
+      nextBtn.textContent = 'Calculate Premium →';
+      nextBtn.classList.add('btn-predict');
+      nextBtn.classList.remove('btn-primary');
+      nextBtn.onclick = submitForm;
+    } else {
+      nextBtn.textContent = 'Next →';
+      nextBtn.classList.add('btn-primary');
+      nextBtn.classList.remove('btn-predict');
+      nextBtn.onclick = () => changeStep(1);
+    }
+  }
+
+  /* ─── COLLECT FORM DATA ──────────────────────────────────────────────────── */
+  function collectData() {
+    return {
+      age:                    parseFloat(document.getElementById('age').value),
+      sex:                    parseFloat(document.getElementById('sex').value),
+      bmi:                    parseFloat(document.getElementById('bmi').value),
+      children:               parseFloat(document.getElementById('children').value),
+      smoker:                 parseFloat(document.getElementById('smoker').value),
+      past_consultations:     parseFloat(document.getElementById('past_consultations').value),
+      num_of_steps:           parseFloat(document.getElementById('num_of_steps').value),
+      past_hospitalizations:  parseFloat(document.getElementById('past_hospitalizations').value),
+      annual_salary:          parseFloat(document.getElementById('annual_salary').value),
+      region:                 parseFloat(document.getElementById('region').value),
+    };
+  }
+
+  /* ─── SUBMIT / PREDICT ───────────────────────────────────────────────────── */
+  async function submitForm() {
+    hideError();
+    showLoader();
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collectData()),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || `Server error (${res.status})`);
+      }
+
+      renderResult(json);
+    } catch (err) {
+      hideLoader();
+      showError(err.message || 'An unexpected error occurred. Please try again.');
+    }
+  }
+
+  function recalculate() {
+    hideResult();
+    submitForm();
+  }
+
+  /* ─── RENDER RESULT ──────────────────────────────────────────────────────── */
+  function renderResult(data) {
+    hideLoader();
+
+    // Main amount
+    document.getElementById('resultAmount').textContent = '$' + data.prediction.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Risk badge
+    const rb = document.getElementById('riskBadge');
+    rb.className = `risk-badge ${data.risk.color}`;
+    rb.textContent = `${data.risk.icon} ${data.risk.level}`;
+
+    // Insight cards (what-if)
+    const wi = data.whatif;
+    const cards = [];
+    if (wi.nonsmoker !== null) {
+      const save = (data.prediction - wi.nonsmoker).toFixed(2);
+      cards.push({ title: 'If Non-Smoker', val: '$' + wi.nonsmoker.toLocaleString(), save: `Save $${parseFloat(save).toLocaleString()} / yr` });
+    }
+    if (wi.healthy_bmi !== null) {
+      const save = (data.prediction - wi.healthy_bmi).toFixed(2);
+      cards.push({ title: 'If BMI < 25', val: '$' + wi.healthy_bmi.toLocaleString(), save: `Save $${parseFloat(save).toLocaleString()} / yr` });
+    }
+    if (wi.age_diff !== null) {
+      cards.push({ title: `At Age ${wi.current_age - 10}`, val: '$' + wi.age_diff.toLocaleString(), save: `10 years younger` });
+    }
+
+    const ic = document.getElementById('insightCards');
+    if (cards.length > 0) {
+      ic.innerHTML = cards.map(c => `
+        <div class="insight-card">
+          <div class="insight-title">${c.title}</div>
+          <div class="insight-val">${c.val}</div>
+          <div class="insight-save">${c.save}</div>
+        </div>`).join('');
+      ic.style.display = 'grid';
+    } else {
+      ic.style.display = 'none';
+    }
+
+    // Advice
+    document.getElementById('adviceBox').textContent = data.risk.advice;
+
+    // Hide form, show result
+    hideFormSteps();
+    document.getElementById('resultPanel').classList.add('show');
+    document.getElementById('resultPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  /* ─── RESET ──────────────────────────────────────────────────────────────── */
+  function resetForm() {
+    hideResult();
+    // Go back to step 1
+    currentStep = 1;
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step1').classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => { t.classList.remove('active', 'done'); });
+    document.querySelector('.tab[data-step="1"]').classList.add('active');
+    document.getElementById('progressBar').style.width = '25%';
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    prevBtn.style.visibility = 'hidden';
+    nextBtn.textContent = 'Next →';
+    nextBtn.classList.add('btn-primary');
+    nextBtn.classList.remove('btn-predict');
+    nextBtn.onclick = () => changeStep(1);
+    showFormSteps();
+  }
+
+  /* ─── HELPERS ────────────────────────────────────────────────────────────── */
+  function showLoader() {
+    hideFormSteps();
+    document.getElementById('loader').classList.add('show');
+  }
+  function hideLoader() {
+    document.getElementById('loader').classList.remove('show');
+  }
+  function hideFormSteps() {
+    document.querySelector('.form-body').style.display = 'none';
+    document.querySelector('.nav-row').style.display = 'none';
+  }
+  function showFormSteps() {
+    document.querySelector('.form-body').style.display = 'block';
+    document.querySelector('.nav-row').style.display = 'flex';
+  }
+  function hideResult() {
+    document.getElementById('resultPanel').classList.remove('show');
+  }
+  function showError(msg) {
+    const ep = document.getElementById('errorPanel');
+    document.getElementById('errorMsg').textContent = '⚠ ' + msg;
+    ep.classList.add('show');
+    showFormSteps();
+  }
+  function hideError() {
+    document.getElementById('errorPanel').classList.remove('show');
+  }
+</script>
+</body>
+</html>
